@@ -1,0 +1,77 @@
+apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-android-extensions'
+apply plugin: 'com.github.ben-manes.versions'
+
+final def ver = rootProject.ext.versions
+
+android {
+    compileSdkVersion ver.compileSdk
+    defaultConfig {
+        minSdkVersion ver.minSdk
+        targetSdkVersion ver.targetSdk
+        versionCode ver.libVersionCode
+        versionName ver.libVersion
+
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+
+        buildConfigField 'String', 'HTTP_SERVER_URL', '"http://jobs-api.dev.udpflood.net/"'
+
+        consumerProguardFiles 'proguard-rules.pro'
+
+        externalNativeBuild {
+            ndkBuild {
+                abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86'
+                arguments "-j${Runtime.runtime.availableProcessors()}"
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            buildConfigField 'String', 'HTTP_SERVER_URL', '"https://jobs-api.path.network/"'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    externalNativeBuild {
+        ndkBuild {
+            path 'src/main/jni/Android.mk'
+        }
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+
+    // Retrofit
+    implementation "com.squareup.okhttp3:okhttp:$versions.okhttp"
+    implementation "com.squareup.retrofit2:retrofit:$versions.retrofit"
+    implementation "com.squareup.retrofit2:converter-gson:$versions.retrofit"
+    implementation "com.squareup.retrofit2:converter-scalars:$versions.retrofit"
+    implementation "com.squareup.okhttp3:logging-interceptor:$versions.okhttp"
+
+    // AndroidX
+    implementation "androidx.appcompat:appcompat:$versions.androidX"
+
+    // Kotlin
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$versions.kotlin"
+
+    // GSON
+    implementation "com.google.code.gson:gson:$versions.gson"
+
+    // Misc
+    implementation "com.github.instacart.truetime-android:library-extension-rx:$versions.trueTime"
+    implementation "com.google.android.gms:play-services-location:$versions.location"
+    implementation "com.jakewharton.timber:timber:$versions.timber"
+}
+
+repositories {
+    mavenCentral()
+}
