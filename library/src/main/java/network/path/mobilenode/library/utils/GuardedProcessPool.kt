@@ -155,3 +155,8 @@ fun thread(name: String? = null, start: Boolean = true, isDaemon: Boolean = fals
     if (start) thread.start()
     return thread
 }
+
+fun printThread(msg: CharSequence) {
+    val th = Thread.currentThread()
+    Timber.d("!!!!! $msg: ${th.id} - ${th.name}")
+}

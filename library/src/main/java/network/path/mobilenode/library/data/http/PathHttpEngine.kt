@@ -1,12 +1,14 @@
 package network.path.mobilenode.library.data.http
 
+import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
-import android.os.Handler
 import com.google.gson.Gson
+import network.path.mobilenode.library.BuildConfig
 import network.path.mobilenode.library.Constants
 import network.path.mobilenode.library.data.android.LastLocationProvider
 import network.path.mobilenode.library.data.android.NetworkMonitor
+import network.path.mobilenode.library.domain.DomainGenerator
 import network.path.mobilenode.library.domain.PathEngine
 import network.path.mobilenode.library.domain.PathStorage
 import network.path.mobilenode.library.domain.WifiSetting
@@ -15,19 +17,26 @@ import network.path.mobilenode.library.domain.entity.ConnectionStatus
 import network.path.mobilenode.library.domain.entity.JobList
 import network.path.mobilenode.library.domain.entity.JobRequest
 import network.path.mobilenode.library.domain.entity.JobResult
+import network.path.mobilenode.library.utils.CustomThreadPoolManager
+import network.path.mobilenode.library.utils.Executable
+import network.path.mobilenode.library.utils.GuardedProcessPool
+import network.path.mobilenode.library.utils.isPortInUse
+import network.path.mobilenode.library.utils.printThread
 import okhttp3.OkHttpClient
 import retrofit2.Call
 import retrofit2.HttpException
 import timber.log.Timber
-import java.io.IOException
+import java.io.File
 import java.net.InetSocketAddress
 import java.net.Proxy
-import java.net.ServerSocket
+import java.net.UnknownHostException
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.Future
 import kotlin.math.max
 
 class PathHttpEngine(
+        private val context: Context,
         private val lastLocationProvider: LastLocationProvider,
         private val networkMonitor: NetworkMonitor,
         private val okHttpClient: OkHttpClient,
@@ -38,9 +47,19 @@ class PathHttpEngine(
         private const val HEARTBEAT_INTERVAL_MS = 30_000L
         private const val HEARTBEAT_INTERVAL_ERROR_MS = 5_000L
         private const val POLL_INTERVAL_MS = 9_000L
+
         private const val MAX_JOBS = 10
         private const val MAX_RETRIES = 5
+
+        private const val TIMEOUT = 600
+        private const val PROXY_RESTART_TIMEOUT = 3_600_000L // 1 hour
+
+        private const val PROXY_PORT = 443
+        private const val PROXY_PASSWORD = "PathNetwork"
+        private const val PROXY_ENCRYPTION_METHOD = "aes-256-cfb"
     }
+
+    private val threadManager = CustomThreadPoolManager()
 
     private val listeners = Collections.newSetFromMap(ConcurrentHashMap<PathEngine.Listener, Boolean>(0))
 
@@ -50,8 +69,10 @@ class PathHttpEngine(
     private var useProxy = false
     private var httpService: PathService? = null
 
-    private var timeoutTimer: Timer? = null
-    private var pollTimer: Timer? = null
+    private var checkInTask: Future<*>? = null
+
+    private val ssLocal = GuardedProcessPool()
+    private val simpleObfs = GuardedProcessPool()
 
     override var status = ConnectionStatus.LOOKING
         private set(value) {
@@ -80,12 +101,9 @@ class PathHttpEngine(
     override fun start() {
         networkMonitor.addListener(this)
 
-        Handler().postDelayed({
-            // TODO: Revisit this delay
-            httpService = getHttpService(false)
-            performCheckIn()
-            pollJobs()
-        }, 1000)
+        httpService = getHttpService(false)
+        performCheckIn(0L)
+        pollJobs(0L)
 
 //        kotlin.concurrent.fixedRateTimer("TEST", false, java.util.Date(), 5_000) {
 //            launch {
@@ -98,22 +116,27 @@ class PathHttpEngine(
         if (result.executionUuid == "DUMMY_UUID") return
 
         val nodeId = storage.nodeId ?: return
-        executeServiceCall {
-            httpService?.postResult(nodeId, result.executionUuid, result)
-        }
 
-        currentExecutionUuids.remove(result.executionUuid)
+        threadManager.run {
+            executeServiceCall {
+                httpService?.postResult(nodeId, result.executionUuid, result)
+            }
 
-        val inactiveUuids = currentExecutionUuids.filterValues { !it }
-        Timber.d("HTTP: ${currentExecutionUuids.size} jobs in the pool, ${inactiveUuids.size} jobs not yet active...")
+            currentExecutionUuids.remove(result.executionUuid)
+
+            val inactiveUuids = currentExecutionUuids.filterValues { !it }
+            Timber.d("HTTP: ${currentExecutionUuids.size} jobs in the pool, ${inactiveUuids.size} jobs not yet active...")
 //        if (inactiveUuids.isEmpty()) {
 //            checkIn()
 //        }
+        }
     }
 
     override fun stop() {
-        pollTimer?.cancel()
-        timeoutTimer?.cancel()
+        threadManager.stop()
+
+        // Kill them all
+        Executable.killAll(context)
 
         networkMonitor.removeListener(this)
     }
@@ -127,23 +150,31 @@ class PathHttpEngine(
     override fun removeListener(l: PathEngine.Listener) = listeners.remove(l)
 
     override fun onStatusChanged(connected: Boolean) {
-        timeoutTimer?.cancel()
-        Handler().postDelayed({
-            performCheckIn()
-        }, 500)
+        if (connected) {
+            performCheckIn(500L)
+        }
     }
 
-    private fun performCheckIn() {
-        val result = executeServiceCall {
-            httpService?.checkIn(storage.nodeId ?: "", createCheckInMessage())
-        }
-        if (result != null) {
-            processJobs(result)
-        } else {
-            if (status != ConnectionStatus.LOOKING) {
-                status = ConnectionStatus.DISCONNECTED
+    private fun performCheckIn(delay: Long) {
+        checkInTask?.cancel(true)
+        checkInTask = threadManager.run("checkIn", delay) {
+            printThread("performCheckIn")
+            Timber.d("HTTP: Checking in...")
+            val result = executeServiceCall {
+                httpService?.checkIn(storage.nodeId ?: "", createCheckInMessage())
             }
-            scheduleCheckIn()
+            if (result != null) {
+                processJobs(result)
+            } else {
+                // No result from check in, we must have disconnected
+                if (status != ConnectionStatus.LOOKING) {
+                    status = ConnectionStatus.DISCONNECTED
+                }
+            }
+
+            Timber.d("HTTP: Scheduling check in...")
+            val nextDelay = if (retryCounter > 0) HEARTBEAT_INTERVAL_ERROR_MS else HEARTBEAT_INTERVAL_MS
+            performCheckIn(nextDelay)
         }
     }
 
@@ -160,22 +191,40 @@ class PathHttpEngine(
             // Add new jobs to the pool
             currentExecutionUuids.putAll(ids)
         }
-        scheduleCheckIn()
 
 //        test()
     }
 
-    private fun processJob(executionUuid: String) {
-        val details = executeServiceCall {
-            httpService?.requestDetails(executionUuid)
+    private fun pollJobs(delay: Long) {
+        threadManager.run("pollJobs", delay) {
+            printThread("pollJobs")
+            Timber.d("HTTP: Start processing jobs...")
+            if (currentExecutionUuids.isNotEmpty()) {
+                // Process only jobs which were not marked as active.
+                val ids = currentExecutionUuids.filterValues { !it }.keys.toList()
+                Timber.d("HTTP: ${ids.size} jobs to be processed")
+                ids.forEach { processJob(it) }
+            }
+
+            Timber.d("HTTP: Scheduling next jobs processing cycle...")
+            pollJobs(POLL_INTERVAL_MS)
         }
-        if (details != null) {
-            details.executionUuid = executionUuid
-            // Mark job as active
-            currentExecutionUuids[executionUuid] = true
-            notifyRequest(details)
-        } else {
-            currentExecutionUuids.remove(executionUuid)
+    }
+
+    private fun processJob(executionUuid: String) {
+        threadManager.run {
+            printThread("processJob")
+            val details = executeServiceCall {
+                httpService?.requestDetails(executionUuid)
+            }
+            if (details != null) {
+                details.executionUuid = executionUuid
+                // Mark job as active
+                currentExecutionUuids[executionUuid] = true
+                notifyRequest(details)
+            } else {
+                currentExecutionUuids.remove(executionUuid)
+            }
         }
     }
 
@@ -214,74 +263,32 @@ class PathHttpEngine(
         )
     }
 
-    private fun pollJobs() {
-        Timber.d("HTTP: Start processing jobs...")
-        if (currentExecutionUuids.isNotEmpty()) {
-            // Process only jobs which were not marked as active.
-            val ids = currentExecutionUuids.filterValues { !it }.keys.toList()
-            Timber.d("HTTP: ${ids.size} jobs to be processed")
-            ids.forEach { processJob(it) }
+    private fun <T> executeServiceCall(call: () -> Call<T>?): T? = try {
+        val result = call()?.execute()?.body()
+        if (result != null) {
+            retryCounter = 0
         }
-        Timber.d("HTTP: Scheduling next jobs processing cycle...")
-
-        val timer = Timer("poll")
-        timer.schedule(object : TimerTask() {
-            override fun run() {
-                pollJobs()
+        result
+    } catch (e: Exception) {
+        var fallback = true
+        when (e) {
+            is UnknownHostException -> fallback = false
+            is HttpException -> if (e.code() == 422) {
+                val body = e.response().body()
+                Timber.w("HTTP exception: $body")
+                // TODO: Parse
+                fallback = false
             }
-        }, POLL_INTERVAL_MS)
-        pollTimer = timer
-    }
-
-    private fun scheduleCheckIn() {
-        Timber.d("HTTP: Scheduling check in...")
-        timeoutTimer?.cancel()
-
-        val timer = Timer("checkIn")
-        val delay = if (retryCounter > 0) HEARTBEAT_INTERVAL_ERROR_MS else HEARTBEAT_INTERVAL_MS
-        timer.schedule(object : TimerTask() {
-            override fun run() {
-                Timber.d("HTTP: Checking in...")
-                performCheckIn()
-            }
-        }, delay)
-        timeoutTimer = timer
-    }
-
-    private fun test() {
-//        val dummyRequest = JobRequest(protocol = "tcp", payload = "HELO\n", endpointAddress = "smtp.gmail.com", endpointPort = 587, jobUuid = "DUMMY_UUID", executionUuid = "DUMMY_UUID")
-//        val dummyRequest = JobRequest(protocol = "tcp", payload = "GET /\n\n", endpointAddress = "www.google.com", endpointPort = 80, jobUuid = "DUMMY_UUID", executionUuid = "DUMMY_UUID")
-        val dummyRequest = JobRequest(protocol = "", method = "traceroute", payload = "HELLO", endpointAddress = "www.google.com", jobUuid = "DUMMY_UUID", executionUuid = "DUMMY_UUID")
-        notifyRequest(dummyRequest)
-    }
-
-    private fun <T> executeServiceCall(call: () -> Call<T>?): T? {
-        return try {
-            val result = call()?.execute()?.body()
-            if (result != null) {
+        }
+        if (fallback) {
+            if (++retryCounter >= MAX_RETRIES) {
+                Timber.w("HTTP: switching proxy mode to [${!useProxy}]")
                 retryCounter = 0
+                httpService = getHttpService(!useProxy)
             }
-            result
-        } catch (e: Exception) {
-            var fallback = true
-            if (e is HttpException) {
-                if (e.code() == 422) {
-                    val body = e.response().body()
-                    Timber.w("HTTP exception: $body")
-                    // TODO: Parse
-                    fallback = false
-                }
-            }
-            if (fallback) {
-                if (++retryCounter >= MAX_RETRIES) {
-                    Timber.w("HTTP: switching proxy mode to [${!useProxy}]")
-                    retryCounter = 0
-                    httpService = getHttpService(!useProxy)
-                }
-            }
-            Timber.w("HTTP: Service call exception: $e")
-            null
         }
+        Timber.w("HTTP: Service call exception: $e")
+        null
     }
 
     private fun getHttpService(useProxy: Boolean): PathService {
@@ -289,6 +296,11 @@ class PathHttpEngine(
         val port = Constants.SS_LOCAL_PORT
 
         Timber.d("HTTP: creating new service [$useProxy]...")
+
+        if (useProxy) {
+            // Start the processes
+            startNativeProcesses()
+        }
 
         // Verify that ss-local is actually running before using it as a proxy
         val client = if (useProxy && isPortInUse(port)) {
@@ -307,11 +319,49 @@ class PathHttpEngine(
         return PathServiceImpl(client, gson)
     }
 
-    private fun isPortInUse(port: Int) = try {
-        ServerSocket(port).close()
-        false
-    } catch (e: IOException) {
-        true
+    private fun startNativeProcesses() {
+        val host = DomainGenerator.findDomain(storage)
+        if (host != null) {
+            Timber.d("HTTP: found proxy domain [$host]")
+            Executable.killAll(context)
+
+            val libs = context.applicationInfo.nativeLibraryDir
+            val obfsCmd = mutableListOf(
+                    File(libs, Executable.SIMPLE_OBFS).absolutePath,
+                    "-s", host,
+                    "-p", PROXY_PORT.toString(),
+                    "-l", Constants.SIMPLE_OBFS_PORT.toString(),
+                    "-t", TIMEOUT.toString(),
+                    "--obfs", "http"
+            )
+            if (BuildConfig.DEBUG) {
+                obfsCmd.add("-v")
+            }
+            simpleObfs.start(obfsCmd)
+
+            val cmd = mutableListOf(
+                    File(libs, Executable.SS_LOCAL).absolutePath,
+                    "-u",
+                    "-s", Constants.LOCALHOST,
+                    "-p", Constants.SIMPLE_OBFS_PORT.toString(),
+                    "-k", PROXY_PASSWORD,
+                    "-m", PROXY_ENCRYPTION_METHOD,
+                    "-b", Constants.LOCALHOST,
+                    "-l", Constants.SS_LOCAL_PORT.toString(),
+                    "-t", TIMEOUT.toString()
+            )
+            if (BuildConfig.DEBUG) {
+                cmd.add("-v")
+            }
+
+            ssLocal.start(cmd)
+        } else {
+            Timber.w("HTTP: proxy domain not found")
+        }
+
+        threadManager.run("nativeProcesses", PROXY_RESTART_TIMEOUT) {
+            startNativeProcesses()
+        }
     }
 
     private fun OkHttpClient.Builder.addProxy(host: String, port: Int): OkHttpClient.Builder =
@@ -321,4 +371,11 @@ class PathHttpEngine(
                         val url = request.url().newBuilder().scheme("http").build()
                         chain.proceed(request.newBuilder().url(url).build())
                     }
+
+    private fun test() {
+//        val dummyRequest = JobRequest(protocol = "tcp", payload = "HELO\n", endpointAddress = "smtp.gmail.com", endpointPort = 587, jobUuid = "DUMMY_UUID", executionUuid = "DUMMY_UUID")
+//        val dummyRequest = JobRequest(protocol = "tcp", payload = "GET /\n\n", endpointAddress = "www.google.com", endpointPort = 80, jobUuid = "DUMMY_UUID", executionUuid = "DUMMY_UUID")
+        val dummyRequest = JobRequest(protocol = "", method = "traceroute", payload = "HELLO", endpointAddress = "www.google.com", jobUuid = "DUMMY_UUID", executionUuid = "DUMMY_UUID")
+        notifyRequest(dummyRequest)
+    }
 }

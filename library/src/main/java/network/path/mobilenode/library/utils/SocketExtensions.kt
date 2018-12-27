@@ -4,6 +4,7 @@ import okhttp3.Response
 import okhttp3.ResponseBody
 import java.io.ByteArrayOutputStream
 import java.io.IOException
+import java.net.ServerSocket
 import java.net.Socket
 
 fun Socket.readText(maxSize: Int): String {
@@ -29,4 +30,11 @@ fun Response.getBody(): ResponseBody {
         throw IOException("Response body is null")
     }
     return body
+}
+
+fun isPortInUse(port: Int) = try {
+    ServerSocket(port).close()
+    false
+} catch (e: IOException) {
+    true
 }

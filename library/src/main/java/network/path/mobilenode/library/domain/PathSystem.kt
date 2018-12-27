@@ -15,43 +15,35 @@ import network.path.mobilenode.library.data.http.CustomDns
 import network.path.mobilenode.library.data.http.PathHttpEngine
 import network.path.mobilenode.library.data.runner.PathJobExecutorImpl
 import network.path.mobilenode.library.data.storage.PathStorageImpl
-import network.path.mobilenode.library.domain.entity.*
-import network.path.mobilenode.library.utils.Executable
-import network.path.mobilenode.library.utils.GuardedProcessPool
+import network.path.mobilenode.library.domain.entity.CheckType
+import network.path.mobilenode.library.domain.entity.CheckTypeStatistics
+import network.path.mobilenode.library.domain.entity.ConnectionStatus
+import network.path.mobilenode.library.domain.entity.JobList
+import network.path.mobilenode.library.domain.entity.JobRequest
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import timber.log.Timber
-import java.io.File
 import java.io.IOException
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
 class PathSystem(
-        private val context: Context,
         private val engine: PathEngine,
         val storage: PathStorage,
         private val jobExecutor: PathJobExecutor,
         private val networkMonitor: NetworkMonitor
 ) : PathEngine.Listener {
     companion object {
-        private const val TIMEOUT = 600
-        private const val PROXY_RESTART_TIMEOUT = 3_600_000L // 1 hour
-
-        private const val PROXY_HOST = "afiasvoiuasd.net"
-        private const val PROXY_PORT = 443
-        private const val PROXY_PASSWORD = "PathNetwork"
-        private const val PROXY_ENCRYPTION_METHOD = "aes-256-cfb"
-
         fun create(context: Context): PathSystem {
             val gson = createLenientGson()
             val okHttpClient = createOkHttpClient()
             val networkMonitor = NetworkMonitor(context)
             val locationProvider = LastLocationProvider(context)
             val storage = PathStorageImpl(context)
-            val engine = PathHttpEngine(locationProvider, networkMonitor, okHttpClient, gson, storage)
+            val engine = PathHttpEngine(context, locationProvider, networkMonitor, okHttpClient, gson, storage)
             val jobExecutor = PathJobExecutorImpl(okHttpClient, storage, gson)
-            return PathSystem(context, engine, storage, jobExecutor, networkMonitor)
+            return PathSystem(engine, storage, jobExecutor, networkMonitor)
         }
 
         private fun createLenientGson(): Gson = GsonBuilder()
@@ -99,10 +91,6 @@ class PathSystem(
     fun addListener(l: Listener) = listeners.add(l)
     fun removeListener(l: Listener) = listeners.remove(l)
 
-    private var restartTimer: Timer? = null
-    private val ssLocal = GuardedProcessPool()
-    private val simpleObfs = GuardedProcessPool()
-
     val status: ConnectionStatus get() = engine.status
     val nodeId: String? get() = engine.nodeId
     val jobList: JobList? get() = engine.jobList
@@ -127,10 +115,6 @@ class PathSystem(
 
         // Initial statistics value
         updateStatistics()
-
-        // Native processes
-        startNativeProcesses()
-        scheduleNativeRestart()
     }
 
     fun toggle() {
@@ -143,9 +127,6 @@ class PathSystem(
 
         networkMonitor.stop()
         jobExecutor.stop()
-        restartTimer?.cancel()
-        // Kill them all
-        Executable.killAll(context)
     }
 
     // PathEngine listener
@@ -194,59 +175,6 @@ class PathSystem(
                 }
 
         statistics = listOf(allStats[0], allStats[1], otherStats)
-    }
-
-    private fun startNativeProcesses() {
-        val host = DomainGenerator.findDomain(storage) ?: PROXY_HOST
-        if (host != null) {
-            Timber.d("PATH SERVICE: found proxy domain [$host]")
-            Executable.killAll(context)
-
-            val libs = context.applicationInfo.nativeLibraryDir
-            val obfsCmd = mutableListOf(
-                    File(libs, Executable.SIMPLE_OBFS).absolutePath,
-                    "-s", host,
-                    "-p", PROXY_PORT.toString(),
-                    "-l", Constants.SIMPLE_OBFS_PORT.toString(),
-                    "-t", TIMEOUT.toString(),
-                    "--obfs", "http"
-            )
-            if (BuildConfig.DEBUG) {
-                obfsCmd.add("-v")
-            }
-            simpleObfs.start(obfsCmd)
-
-            val cmd = mutableListOf(
-                    File(libs, Executable.SS_LOCAL).absolutePath,
-                    "-u",
-                    "-s", Constants.LOCALHOST,
-                    "-p", Constants.SIMPLE_OBFS_PORT.toString(),
-                    "-k", PROXY_PASSWORD,
-                    "-m", PROXY_ENCRYPTION_METHOD,
-                    "-b", Constants.LOCALHOST,
-                    "-l", Constants.SS_LOCAL_PORT.toString(),
-                    "-t", TIMEOUT.toString()
-            )
-            if (BuildConfig.DEBUG) {
-                cmd.add("-v")
-            }
-
-            ssLocal.start(cmd)
-        } else {
-            Timber.w("PATH SERVICE: proxy domain not found")
-        }
-    }
-
-    private fun scheduleNativeRestart() {
-        // TODO: Schedule on IO thread
-        val timer = Timer("scheduleNativeRestart")
-        timer.schedule(object : TimerTask() {
-            override fun run() {
-                startNativeProcesses()
-                scheduleNativeRestart()
-            }
-        }, PROXY_RESTART_TIMEOUT)
-        restartTimer = timer
     }
 
     @SuppressLint("CheckResult")
