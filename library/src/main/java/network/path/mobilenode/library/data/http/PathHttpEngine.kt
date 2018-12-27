@@ -21,7 +21,6 @@ import network.path.mobilenode.library.utils.CustomThreadPoolManager
 import network.path.mobilenode.library.utils.Executable
 import network.path.mobilenode.library.utils.GuardedProcessPool
 import network.path.mobilenode.library.utils.isPortInUse
-import network.path.mobilenode.library.utils.printThread
 import okhttp3.OkHttpClient
 import retrofit2.Call
 import retrofit2.HttpException
@@ -41,7 +40,8 @@ class PathHttpEngine(
         private val networkMonitor: NetworkMonitor,
         private val okHttpClient: OkHttpClient,
         private val gson: Gson,
-        private val storage: PathStorage
+        private val storage: PathStorage,
+        private val threadManager: CustomThreadPoolManager
 ) : PathEngine, NetworkMonitor.Listener {
     companion object {
         private const val HEARTBEAT_INTERVAL_MS = 30_000L
@@ -58,8 +58,6 @@ class PathHttpEngine(
         private const val PROXY_PASSWORD = "PathNetwork"
         private const val PROXY_ENCRYPTION_METHOD = "aes-256-cfb"
     }
-
-    private val threadManager = CustomThreadPoolManager()
 
     private val listeners = Collections.newSetFromMap(ConcurrentHashMap<PathEngine.Listener, Boolean>(0))
 
@@ -158,7 +156,6 @@ class PathHttpEngine(
     private fun performCheckIn(delay: Long) {
         checkInTask?.cancel(true)
         checkInTask = threadManager.run("checkIn", delay) {
-            printThread("performCheckIn")
             Timber.d("HTTP: Checking in...")
             val result = executeServiceCall {
                 httpService?.checkIn(storage.nodeId ?: "", createCheckInMessage())
@@ -197,7 +194,6 @@ class PathHttpEngine(
 
     private fun pollJobs(delay: Long) {
         threadManager.run("pollJobs", delay) {
-            printThread("pollJobs")
             Timber.d("HTTP: Start processing jobs...")
             if (currentExecutionUuids.isNotEmpty()) {
                 // Process only jobs which were not marked as active.
@@ -213,7 +209,6 @@ class PathHttpEngine(
 
     private fun processJob(executionUuid: String) {
         threadManager.run {
-            printThread("processJob")
             val details = executeServiceCall {
                 httpService?.requestDetails(executionUuid)
             }

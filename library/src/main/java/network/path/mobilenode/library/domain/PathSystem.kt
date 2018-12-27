@@ -20,6 +20,7 @@ import network.path.mobilenode.library.domain.entity.CheckTypeStatistics
 import network.path.mobilenode.library.domain.entity.ConnectionStatus
 import network.path.mobilenode.library.domain.entity.JobList
 import network.path.mobilenode.library.domain.entity.JobRequest
+import network.path.mobilenode.library.utils.CustomThreadPoolManager
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import timber.log.Timber
@@ -32,18 +33,20 @@ class PathSystem(
         private val engine: PathEngine,
         val storage: PathStorage,
         private val jobExecutor: PathJobExecutor,
-        private val networkMonitor: NetworkMonitor
+        private val networkMonitor: NetworkMonitor,
+        private val threadManager: CustomThreadPoolManager
 ) : PathEngine.Listener {
     companion object {
         fun create(context: Context): PathSystem {
             val gson = createLenientGson()
+            val threadManager = CustomThreadPoolManager()
             val okHttpClient = createOkHttpClient()
             val networkMonitor = NetworkMonitor(context)
             val locationProvider = LastLocationProvider(context)
             val storage = PathStorageImpl(context)
-            val engine = PathHttpEngine(context, locationProvider, networkMonitor, okHttpClient, gson, storage)
+            val engine = PathHttpEngine(context, locationProvider, networkMonitor, okHttpClient, gson, storage, threadManager)
             val jobExecutor = PathJobExecutorImpl(okHttpClient, storage, gson)
-            return PathSystem(engine, storage, jobExecutor, networkMonitor)
+            return PathSystem(engine, storage, jobExecutor, networkMonitor, threadManager)
         }
 
         private fun createLenientGson(): Gson = GsonBuilder()
@@ -135,7 +138,14 @@ class PathSystem(
     }
 
     override fun onRequestReceived(request: JobRequest) {
-        process(request)
+        threadManager.run {
+            Timber.d("SYSTEM: received [$request]")
+            val result = jobExecutor.execute(request).get()
+            storage.recordStatistics(result.checkType, result.responseTime)
+            engine.processResult(result)
+            updateStatistics()
+            Timber.d("SYSTEM: request result [$result]")
+        }
     }
 
     override fun onNodeId(nodeId: String?) {
@@ -154,15 +164,6 @@ class PathSystem(
     }
 
     // Private methods
-    private fun process(request: JobRequest) {
-        Timber.d("SYSTEM: received [$request]")
-        val result = jobExecutor.execute(request).get()
-        storage.recordStatistics(result.checkType, result.responseTime)
-        engine.processResult(result)
-        updateStatistics()
-        Timber.d("SYSTEM: request result [$result]")
-    }
-
     private fun updateStatistics() {
         val allStats = CheckType.values()
                 .map { storage.statisticsForType(it) }
