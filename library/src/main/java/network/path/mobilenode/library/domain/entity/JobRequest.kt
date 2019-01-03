@@ -2,7 +2,7 @@ package network.path.mobilenode.library.domain.entity
 
 import network.path.mobilenode.library.Constants
 
-data class JobRequest(
+internal data class JobRequest(
         val type: String = "job-request",
         val protocol: String? = null,
         val method: String? = null,
@@ -22,12 +22,12 @@ data class JobRequest(
 data class JobValidResponse(val headerStatus: String, val bodyContains: String)
 data class JobCriticalResponse(val headerStatus: String, val bodyContains: String)
 
-val JobRequest.endpointHost: String
+internal val JobRequest.endpointHost: String
     get() {
         endpointAddress ?: throw java.io.IOException("Missing endpoint address in $this")
         val regex = "^\\w+://".toRegex(RegexOption.IGNORE_CASE)
         return endpointAddress.replaceFirst(regex, "").replaceAfter('/', "")
     }
 
-fun JobRequest.endpointPortOrDefault(default: Int): Int =
+internal fun JobRequest.endpointPortOrDefault(default: Int): Int =
         (endpointPort ?: default).coerceIn(Constants.TCP_UDP_PORT_RANGE)

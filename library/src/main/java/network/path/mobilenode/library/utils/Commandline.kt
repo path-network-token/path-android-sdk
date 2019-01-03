@@ -44,7 +44,7 @@ import java.util.*
  *
  * Adds support for escape character '\'.
  */
-object Commandline {
+internal object Commandline {
 
     /**
      * Quote the parts of the given array in way that makes them

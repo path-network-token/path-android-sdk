@@ -12,7 +12,7 @@ enum class WifiSetting(val value: Int) {
     }
 }
 
-interface PathStorage {
+internal interface PathStorage {
     var walletAddress: String
     var nodeId: String?
     var isActivated: Boolean

@@ -7,7 +7,7 @@ import network.path.mobilenode.library.domain.entity.CheckType
 import network.path.mobilenode.library.domain.entity.JobRequest
 import network.path.mobilenode.library.domain.entity.endpointHost
 
-class TraceRunner(private val gson: Gson) : Runner {
+internal class TraceRunner(private val gson: Gson) : Runner {
     companion object {
         init {
             System.loadLibrary("traceroute")

@@ -11,7 +11,9 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
 
-class PathJobExecutorImpl(private val okHttpClient: OkHttpClient, private val storage: PathStorage, private val gson: Gson) : PathJobExecutor {
+internal class PathJobExecutorImpl(private val okHttpClient: OkHttpClient,
+                                   private val storage: PathStorage,
+                                   private val gson: Gson) : PathJobExecutor {
     private lateinit var executor: ExecutorService
 
     override fun start() {

@@ -8,7 +8,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
 
-class CustomThreadPoolManager {
+internal class CustomThreadPoolManager {
     companion object {
         private val NUMBER_OF_CORES = Runtime.getRuntime().availableProcessors()
     }

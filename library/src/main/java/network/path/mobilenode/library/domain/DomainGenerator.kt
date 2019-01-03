@@ -7,7 +7,7 @@ import java.util.*
 import java.util.concurrent.Callable
 import java.util.concurrent.Executors
 
-object DomainGenerator {
+internal object DomainGenerator {
     private const val CHECK_MAX_DAYS = 10
     private val SEED = listOf(
             intArrayOf(8, 11, 17, 4, 25, 16, 13, 19, 12, 7, 14, 47)

@@ -10,7 +10,7 @@ import network.path.mobilenode.library.utils.writeText
 import java.net.InetSocketAddress
 import javax.net.SocketFactory
 
-class TcpRunner : Runner {
+internal class TcpRunner : Runner {
     override val checkType = CheckType.TCP
 
     override fun runJob(jobRequest: JobRequest) = computeJobResult(checkType, jobRequest) {

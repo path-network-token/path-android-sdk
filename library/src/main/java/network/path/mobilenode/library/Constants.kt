@@ -2,7 +2,7 @@ package network.path.mobilenode.library
 
 import java.util.concurrent.TimeUnit
 
-object Constants {
+internal object Constants {
     const val PATH_API_VERSION = "1.0.1"
 
     const val PATH_DEFAULT_WALLET_ADDRESS = "0x0000000000000000000000000000000000000000"

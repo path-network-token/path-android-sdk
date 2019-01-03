@@ -15,7 +15,7 @@ import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
 
-interface PathService {
+internal interface PathService {
     @POST("/checkin/{nodeId}")
     fun checkIn(@Path("nodeId") nodeId: String?, @Body checkIn: CheckIn): Call<JobList>
 
@@ -26,7 +26,7 @@ interface PathService {
     fun postResult(@Path("nodeId") nodeId: String, @Path("executionId") executionId: String, @Body result: JobResult): Call<Unit>
 }
 
-class PathServiceImpl(
+internal class PathServiceImpl(
         okHttpClient: OkHttpClient,
         gson: Gson
 ) : PathService by Retrofit.Builder()

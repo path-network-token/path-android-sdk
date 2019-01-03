@@ -5,7 +5,7 @@ import network.path.mobilenode.library.domain.entity.JobList
 import network.path.mobilenode.library.domain.entity.JobRequest
 import network.path.mobilenode.library.domain.entity.JobResult
 
-interface PathEngine {
+internal interface PathEngine {
     interface Listener {
         fun onStatusChanged(status: ConnectionStatus)
         fun onRequestReceived(request: JobRequest)

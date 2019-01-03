@@ -32,7 +32,7 @@ import java.io.InputStream
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.atomic.AtomicReference
 
-class GuardedProcessPool {
+internal class GuardedProcessPool {
     companion object Dummy : IOException("Oopsie the developer has made a no-no") {
         private const val TAG = "GuardedProcessPool"
         private val ProcessImpl by lazy { Class.forName("java/lang/ProcessManager\$ProcessImpl") }

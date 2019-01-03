@@ -10,7 +10,7 @@ import network.path.mobilenode.library.domain.entity.CheckTypeStatistics
 import network.path.mobilenode.library.utils.prefs
 import network.path.mobilenode.library.utils.prefsOptional
 
-class PathStorageImpl(context: Context) : PathStorage {
+internal class PathStorageImpl(context: Context) : PathStorage {
     companion object {
         private const val PATH_ADDRESS_KEY = "PATH_ADDRESS_KEY"
 

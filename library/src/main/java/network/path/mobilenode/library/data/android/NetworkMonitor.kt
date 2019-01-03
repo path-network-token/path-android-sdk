@@ -10,7 +10,7 @@ import android.net.NetworkRequest
 import android.os.Build
 import androidx.annotation.RequiresApi
 
-class NetworkMonitor(private val context: Context) {
+internal class NetworkMonitor(private val context: Context) {
     interface Listener {
         fun onStatusChanged(connected: Boolean)
     }

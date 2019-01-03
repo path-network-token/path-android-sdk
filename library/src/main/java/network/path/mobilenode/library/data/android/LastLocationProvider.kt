@@ -5,7 +5,7 @@ import android.location.Location
 import com.google.android.gms.location.LocationServices
 import timber.log.Timber
 
-class LastLocationProvider(context: Context) {
+internal class LastLocationProvider(context: Context) {
     private val fusedLocationProvider = LocationServices.getFusedLocationProviderClient(context)
 
     fun location(): Location? = try {

@@ -12,7 +12,7 @@ import java.util.concurrent.Callable
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
-fun computeJobResult(checkType: CheckType, jobRequest: JobRequest, block: (JobRequest) -> String): JobResult {
+internal fun computeJobResult(checkType: CheckType, jobRequest: JobRequest, block: (JobRequest) -> String): JobResult {
     var responseBody = ""
     var isResponseKnown = false
 
@@ -54,7 +54,7 @@ inline fun measureRealtimeMillis(block: () -> Unit): Long {
     return SystemClock.elapsedRealtime() - start
 }
 
-fun calculateJobStatus(requestDurationMillis: Long, jobRequest: JobRequest): String {
+internal fun calculateJobStatus(requestDurationMillis: Long, jobRequest: JobRequest): String {
     val degradedAfterMillis = jobRequest.degradedAfter ?: Constants.DEFAULT_DEGRADED_TIMEOUT_MILLIS
     val criticalAfterMillis = jobRequest.criticalAfter ?: Constants.DEFAULT_CRITICAL_TIMEOUT_MILLIS
 

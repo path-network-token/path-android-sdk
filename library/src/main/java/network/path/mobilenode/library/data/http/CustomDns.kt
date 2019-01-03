@@ -11,7 +11,7 @@ import java.net.InetAddress
 import java.net.UnknownHostException
 import java.util.*
 
-class CustomDns : Dns {
+internal class CustomDns : Dns {
     companion object {
         private const val API_HOST = BuildConfig.HTTP_SERVER_URL
         private val API_IP = if (BuildConfig.DEBUG) "52.13.210.106" else "34.210.251.154"

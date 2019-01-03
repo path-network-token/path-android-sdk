@@ -11,7 +11,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.IOException
 
-class HttpRunner(private val okHttpClient: OkHttpClient, private val storage: PathStorage) : Runner {
+internal class HttpRunner(private val okHttpClient: OkHttpClient, private val storage: PathStorage) : Runner {
     companion object {
         private val HTTP_PROTOCOL_REGEX = "^https?://.*".toRegex(RegexOption.IGNORE_CASE)
     }

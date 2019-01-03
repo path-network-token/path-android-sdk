@@ -1,6 +1,6 @@
 package network.path.mobilenode.library.domain.entity
 
-data class JobResult(
+internal data class JobResult(
         val type: String = "job-result",
         val checkType: CheckType,
         val executionUuid: String,

@@ -9,7 +9,7 @@ import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
 
-class UdpRunner : Runner {
+internal class UdpRunner : Runner {
     override val checkType = CheckType.UDP
 
     override fun runJob(jobRequest: JobRequest) = computeJobResult(checkType, jobRequest) {

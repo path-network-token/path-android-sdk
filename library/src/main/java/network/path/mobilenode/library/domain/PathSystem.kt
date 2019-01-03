@@ -29,13 +29,14 @@ import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
-class PathSystem(
+class PathSystem
+internal constructor(
         private val engine: PathEngine,
-        val storage: PathStorage,
+        private val storage: PathStorage,
         private val jobExecutor: PathJobExecutor,
         private val networkMonitor: NetworkMonitor,
         private val threadManager: CustomThreadPoolManager
-) : PathEngine.Listener {
+) {
     companion object {
         fun create(context: Context): PathSystem {
             val gson = createLenientGson()
@@ -99,11 +100,66 @@ class PathSystem(
     val jobList: JobList? get() = engine.jobList
     val isRunning: Boolean get() = engine.isRunning
 
+    // Activation
+    val isActivated: Boolean get() = storage.isActivated
+
+    fun activate() {
+        storage.isActivated = true
+    }
+
+    // Wi-Fi setting
+    var wifiSetting: WifiSetting
+        get() = storage.wifiSetting
+        set(value) {
+            storage.wifiSetting = value
+        }
+
+    // Wallet address
+    var walletAddress: String
+        get() = storage.walletAddress
+        set(value) {
+            storage.walletAddress = value
+        }
+    val hasAddress: Boolean get() = storage.walletAddress != Constants.PATH_DEFAULT_WALLET_ADDRESS
+
+    // Stats
     var statistics: List<CheckTypeStatistics> = emptyList()
         private set(value) {
             field = value
             listeners.forEach { it.onStatisticsChanged(value) }
         }
+
+    private val engineListener = object : PathEngine.Listener {
+        override fun onStatusChanged(status: ConnectionStatus) {
+            listeners.forEach { it.onStatusChanged(status) }
+        }
+
+        override fun onRequestReceived(request: JobRequest) {
+            threadManager.run {
+                Timber.d("SYSTEM: received [$request]")
+                val result = jobExecutor.execute(request).get()
+                storage.recordStatistics(result.checkType, result.responseTime)
+                engine.processResult(result)
+                updateStatistics()
+                Timber.d("SYSTEM: request result [$result]")
+            }
+        }
+
+        override fun onNodeId(nodeId: String?) {
+            if (nodeId != null) {
+                storage.nodeId = nodeId
+            }
+            listeners.forEach { it.onNodeId(nodeId) }
+        }
+
+        override fun onJobListReceived(jobList: JobList?) {
+            listeners.forEach { it.onJobListReceived(jobList) }
+        }
+
+        override fun onRunning(isRunning: Boolean) {
+            listeners.forEach { it.onRunningChanged(isRunning) }
+        }
+    }
 
     init {
         initTrueTime()
@@ -113,7 +169,7 @@ class PathSystem(
         jobExecutor.start()
         networkMonitor.start()
 
-        engine.addListener(this)
+        engine.addListener(engineListener)
         engine.start()
 
         // Initial statistics value
@@ -126,41 +182,10 @@ class PathSystem(
 
     fun stop() {
         engine.stop()
-        engine.removeListener(this)
+        engine.removeListener(engineListener)
 
         networkMonitor.stop()
         jobExecutor.stop()
-    }
-
-    // PathEngine listener
-    override fun onStatusChanged(status: ConnectionStatus) {
-        listeners.forEach { it.onStatusChanged(status) }
-    }
-
-    override fun onRequestReceived(request: JobRequest) {
-        threadManager.run {
-            Timber.d("SYSTEM: received [$request]")
-            val result = jobExecutor.execute(request).get()
-            storage.recordStatistics(result.checkType, result.responseTime)
-            engine.processResult(result)
-            updateStatistics()
-            Timber.d("SYSTEM: request result [$result]")
-        }
-    }
-
-    override fun onNodeId(nodeId: String?) {
-        if (nodeId != null) {
-            storage.nodeId = nodeId
-        }
-        listeners.forEach { it.onNodeId(nodeId) }
-    }
-
-    override fun onJobListReceived(jobList: JobList?) {
-        listeners.forEach { it.onJobListReceived(jobList) }
-    }
-
-    override fun onRunning(isRunning: Boolean) {
-        listeners.forEach { it.onRunningChanged(isRunning) }
     }
 
     // Private methods

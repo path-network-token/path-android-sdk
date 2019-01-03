@@ -34,7 +34,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Future
 import kotlin.math.max
 
-class PathHttpEngine(
+internal class PathHttpEngine(
         private val context: Context,
         private val lastLocationProvider: LastLocationProvider,
         private val networkMonitor: NetworkMonitor,

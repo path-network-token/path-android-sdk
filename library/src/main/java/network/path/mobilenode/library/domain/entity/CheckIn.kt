@@ -3,7 +3,7 @@ package network.path.mobilenode.library.domain.entity
 import network.path.mobilenode.library.BuildConfig
 import network.path.mobilenode.library.Constants
 
-data class CheckIn(
+internal data class CheckIn(
         val type: String = "checkin",
         val nodeId: String?,
         val lat: String? = null,

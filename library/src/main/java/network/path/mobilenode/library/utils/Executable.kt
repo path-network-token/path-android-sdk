@@ -28,7 +28,7 @@ import timber.log.Timber
 import java.io.File
 import java.io.FileNotFoundException
 
-object Executable {
+internal object Executable {
     const val REDSOCKS = "libredsocks.so"
     const val SS_LOCAL = "libss-local.so"
     const val SS_TUNNEL = "libss-tunnel.so"

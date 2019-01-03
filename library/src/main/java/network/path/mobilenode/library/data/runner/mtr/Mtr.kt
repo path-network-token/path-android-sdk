@@ -1,6 +1,6 @@
 package network.path.mobilenode.library.data.runner.mtr
 
-class MtrResult(
+internal class MtrResult(
         val ttl: Int,
         val host: String,
         val ip: String,
@@ -11,6 +11,6 @@ class MtrResult(
         val err: String?
 )
 
-class Mtr {
+internal class Mtr {
     external fun trace(server: String, port: Int): Array<MtrResult?>?
 }

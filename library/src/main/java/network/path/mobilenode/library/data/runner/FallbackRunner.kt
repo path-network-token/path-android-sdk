@@ -5,7 +5,7 @@ import network.path.mobilenode.library.domain.entity.JobRequest
 import network.path.mobilenode.library.domain.entity.JobResult
 import network.path.mobilenode.library.domain.entity.Status
 
-object FallbackRunner : Runner {
+internal object FallbackRunner : Runner {
     override val checkType = CheckType.UNKNOWN
 
     override fun runJob(jobRequest: JobRequest) = JobResult(
