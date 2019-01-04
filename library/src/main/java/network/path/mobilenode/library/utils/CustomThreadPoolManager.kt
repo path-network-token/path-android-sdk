@@ -15,10 +15,14 @@ internal class CustomThreadPoolManager {
 
     private val executorService = ScheduledThreadPoolExecutor(NUMBER_OF_CORES * 2, BackgroundThreadFactory())
 
-    fun <T> run(name: CharSequence, delay: Long = 0L, callable: (() -> T?)): Future<T?> = if (delay != 0L) {
-        executorService.schedule(callable, delay, TimeUnit.MILLISECONDS)
-    } else {
-        executorService.submit(callable)
+    fun <T> run(name: CharSequence, delay: Long = 0L, callable: (() -> T?)): Future<T?>? {
+        if (executorService.isShutdown) return null
+
+        return if (delay != 0L) {
+            executorService.schedule(callable, delay, TimeUnit.MILLISECONDS)
+        } else {
+            executorService.submit(callable)
+        }
     }
 
     fun stop(): List<Runnable> = executorService.shutdownNow()

@@ -115,7 +115,7 @@ internal class PathHttpEngine(
 
         val nodeId = storage.nodeId ?: return
 
-        threadManager.run {
+        threadManager.run("processResult") {
             executeServiceCall {
                 httpService?.postResult(nodeId, result.executionUuid, result)
             }
@@ -213,7 +213,7 @@ internal class PathHttpEngine(
     }
 
     private fun processJob(executionUuid: String) {
-        threadManager.run {
+        threadManager.run("processJob") {
             val details = executeServiceCall {
                 httpService?.requestDetails(executionUuid)
             }
