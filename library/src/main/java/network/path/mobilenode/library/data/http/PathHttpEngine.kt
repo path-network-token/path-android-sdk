@@ -11,12 +11,12 @@ import network.path.mobilenode.library.data.android.NetworkMonitor
 import network.path.mobilenode.library.domain.DomainGenerator
 import network.path.mobilenode.library.domain.PathEngine
 import network.path.mobilenode.library.domain.PathStorage
-import network.path.mobilenode.library.domain.WifiSetting
 import network.path.mobilenode.library.domain.entity.CheckIn
 import network.path.mobilenode.library.domain.entity.ConnectionStatus
 import network.path.mobilenode.library.domain.entity.JobList
 import network.path.mobilenode.library.domain.entity.JobRequest
 import network.path.mobilenode.library.domain.entity.JobResult
+import network.path.mobilenode.library.domain.entity.WifiSetting
 import network.path.mobilenode.library.utils.CustomThreadPoolManager
 import network.path.mobilenode.library.utils.Executable
 import network.path.mobilenode.library.utils.GuardedProcessPool
@@ -137,6 +137,11 @@ internal class PathHttpEngine(
         Executable.killAll(context)
 
         networkMonitor.removeListener(this)
+
+        // Reset values to defaults
+        status = ConnectionStatus.LOOKING
+        jobList = null
+        isRunning = true
     }
 
     override fun toggle() {

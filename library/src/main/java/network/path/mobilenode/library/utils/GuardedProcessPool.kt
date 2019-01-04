@@ -46,12 +46,12 @@ internal class GuardedProcessPool {
         private var pushed = false
 
         private fun streamLogger(input: InputStream, logger: (String, String) -> Int) =
-                thread("StreamLogger-$cmdName") {
-                    try {
-                        input.bufferedReader().forEachLine { logger(TAG, it) }
-                    } catch (_: IOException) {
-                    }    // ignore
-                }
+            thread("StreamLogger-$cmdName") {
+                try {
+                    input.bufferedReader().forEachLine { logger(TAG, it) }
+                } catch (_: IOException) {
+                }    // ignore
+            }
 
         private fun pushException(ioException: IOException?) {
             if (pushed) return
@@ -68,8 +68,8 @@ internal class GuardedProcessPool {
                     val startTime = SystemClock.elapsedRealtime()
 
                     process = ProcessBuilder(cmd)
-                            .redirectErrorStream(true)
-                            .start()
+                        .redirectErrorStream(true)
+                        .start()
 
                     streamLogger(process.inputStream, Log::i)
                     streamLogger(process.errorStream, Log::e)
@@ -148,15 +148,17 @@ internal class GuardedProcessPool {
 /**
  * Wrapper for kotlin.concurrent.thread that tracks uncaught exceptions.
  */
-fun thread(name: String? = null, start: Boolean = true, isDaemon: Boolean = false,
-           contextClassLoader: ClassLoader? = null, priority: Int = -1, block: () -> Unit): Thread {
+internal fun thread(
+    name: String? = null, start: Boolean = true, isDaemon: Boolean = false,
+    contextClassLoader: ClassLoader? = null, priority: Int = -1, block: () -> Unit
+): Thread {
     val thread = kotlin.concurrent.thread(false, isDaemon, contextClassLoader, name, priority, block)
     thread.setUncaughtExceptionHandler { _, t -> Timber.e(t) }
     if (start) thread.start()
     return thread
 }
 
-fun printThread(msg: CharSequence) {
+internal fun printThread(msg: CharSequence) {
     val th = Thread.currentThread()
     Timber.d("!!!!! $msg: ${th.id} - ${th.name}")
 }

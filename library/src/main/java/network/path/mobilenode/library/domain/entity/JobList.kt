@@ -2,7 +2,7 @@ package network.path.mobilenode.library.domain.entity
 
 import com.google.gson.annotations.SerializedName
 
-data class JobList(
+internal data class JobList(
         val type: String,
         val nodeId: String?,
         @SerializedName("ASN")
@@ -12,6 +12,10 @@ data class JobList(
         val networkPrefix: String?,
         val location: String?,
         val jobs: List<JobExecutionId>
-)
+) {
+    val nodeInfo: NodeInfo
+        get() = NodeInfo(nodeId, asn, asOrganization, networkPrefix, location)
 
-data class JobExecutionId(val executionUuid: String)
+}
+
+internal data class JobExecutionId(val executionUuid: String)

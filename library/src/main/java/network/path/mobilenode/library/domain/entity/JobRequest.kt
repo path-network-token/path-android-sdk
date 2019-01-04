@@ -19,8 +19,8 @@ internal data class JobRequest(
         var executionUuid: String
 )
 
-data class JobValidResponse(val headerStatus: String, val bodyContains: String)
-data class JobCriticalResponse(val headerStatus: String, val bodyContains: String)
+internal data class JobValidResponse(val headerStatus: String, val bodyContains: String)
+internal data class JobCriticalResponse(val headerStatus: String, val bodyContains: String)
 
 internal val JobRequest.endpointHost: String
     get() {

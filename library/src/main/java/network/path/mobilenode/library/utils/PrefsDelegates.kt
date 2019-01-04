@@ -6,19 +6,25 @@ import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
 @Suppress("REIFIED_TYPE_PARAMETER_NO_INLINE")
-fun <reified T : Any> Set<*>.isSetOf(): Boolean =
-        T::class.java.isAssignableFrom(this::class.java.componentType)
+internal fun <reified T : Any> Set<*>.isSetOf(): Boolean =
+    T::class.java.isAssignableFrom(this::class.java.componentType)
 
-fun <T : Any> prefs(prefs: SharedPreferences, name: String, defaultValue: T): SharedPreferencesDelegate<T> =
-        SharedPreferencesDelegate(prefs, name, defaultValue)
+internal fun <T : Any> prefs(prefs: SharedPreferences, name: String, defaultValue: T): SharedPreferencesDelegate<T> =
+    SharedPreferencesDelegate(prefs, name, defaultValue)
 
-fun <T : Any> prefsOptional(prefs: SharedPreferences, name: String, clazz: Class<T>, ttl: Long = -1L): SharedPreferencesOptionalDelegate<T> =
-        SharedPreferencesOptionalDelegate(prefs, name, clazz, ttl)
+internal fun <T : Any> prefsOptional(
+    prefs: SharedPreferences,
+    name: String,
+    clazz: Class<T>,
+    ttl: Long = -1L
+): SharedPreferencesOptionalDelegate<T> =
+    SharedPreferencesOptionalDelegate(prefs, name, clazz, ttl)
 
-class SharedPreferencesDelegate<T : Any>(private val prefs: SharedPreferences,
-                                         private val name: String,
-                                         private val defaultValue: T)
-    : ReadWriteProperty<Any, T> {
+internal class SharedPreferencesDelegate<T : Any>(
+    private val prefs: SharedPreferences,
+    private val name: String,
+    private val defaultValue: T
+) : ReadWriteProperty<Any, T> {
 
     @Suppress("UNCHECKED_CAST")
     override operator fun getValue(thisRef: Any, property: KProperty<*>): T = if (!prefs.contains(name)) {
@@ -61,11 +67,12 @@ class SharedPreferencesDelegate<T : Any>(private val prefs: SharedPreferences,
     }
 }
 
-class SharedPreferencesOptionalDelegate<T : Any>(private val prefs: SharedPreferences,
-                                                 private val name: String,
-                                                 private val clazz: Class<T>,
-                                                 private val ttl: Long = -1L)
-    : ReadWriteProperty<Any, T?> {
+internal class SharedPreferencesOptionalDelegate<T : Any>(
+    private val prefs: SharedPreferences,
+    private val name: String,
+    private val clazz: Class<T>,
+    private val ttl: Long = -1L
+) : ReadWriteProperty<Any, T?> {
 
     @Suppress("UNCHECKED_CAST")
     override operator fun getValue(thisRef: Any, property: KProperty<*>): T? = if (!prefs.contains(name)) {

@@ -4,9 +4,9 @@ import android.content.Context
 import android.preference.PreferenceManager
 import network.path.mobilenode.library.Constants
 import network.path.mobilenode.library.domain.PathStorage
-import network.path.mobilenode.library.domain.WifiSetting
-import network.path.mobilenode.library.domain.entity.CheckType
-import network.path.mobilenode.library.domain.entity.CheckTypeStatistics
+import network.path.mobilenode.library.domain.entity.WifiSetting
+import network.path.mobilenode.library.domain.entity.JobType
+import network.path.mobilenode.library.domain.entity.JobTypeStatistics
 import network.path.mobilenode.library.utils.prefs
 import network.path.mobilenode.library.utils.prefsOptional
 
@@ -44,15 +44,15 @@ internal class PathStorageImpl(context: Context) : PathStorage {
 
     override var proxyDomain: String? by prefsOptional(sharedPreferences, PROXY_DOMAIN_KEY, String::class.java, 3_600_000L) // 1 hour
 
-    private fun createPrefKey(type: CheckType, key: String) = "$type$key"
+    private fun createPrefKey(type: JobType, key: String) = "$type$key"
 
-    override fun statisticsForType(type: CheckType): CheckTypeStatistics {
+    override fun statisticsForType(type: JobType): JobTypeStatistics {
         val averageLatency = sharedPreferences.getLong(createPrefKey(type, CHECKS_LATENCY_KEY_SUFFIX), 0L)
         val count = if (averageLatency < 1) 0L else sharedPreferences.getLong(createPrefKey(type, CHECKS_COUNT_KEY_SUFFIX), 0L)
-        return CheckTypeStatistics(type, count, averageLatency)
+        return JobTypeStatistics(type, count, averageLatency)
     }
 
-    override fun recordStatistics(type: CheckType, elapsed: Long): CheckTypeStatistics {
+    override fun recordStatistics(type: JobType, elapsed: Long): JobTypeStatistics {
         val stats = statisticsForType(type)
         val newStats = stats.add(elapsed)
 

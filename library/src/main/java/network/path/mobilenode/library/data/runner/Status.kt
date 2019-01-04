@@ -1,4 +1,4 @@
-package network.path.mobilenode.library.domain.entity
+package network.path.mobilenode.library.data.runner
 
 internal object Status {
     const val CRITICAL = "critical"

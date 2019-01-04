@@ -3,7 +3,7 @@ package network.path.mobilenode.library.data.runner
 import network.path.mobilenode.library.BuildConfig
 import network.path.mobilenode.library.Constants
 import network.path.mobilenode.library.domain.PathStorage
-import network.path.mobilenode.library.domain.entity.CheckType
+import network.path.mobilenode.library.domain.entity.JobType
 import network.path.mobilenode.library.domain.entity.JobRequest
 import network.path.mobilenode.library.utils.getBody
 import okhttp3.HttpUrl
@@ -16,9 +16,9 @@ internal class HttpRunner(private val okHttpClient: OkHttpClient, private val st
         private val HTTP_PROTOCOL_REGEX = "^https?://.*".toRegex(RegexOption.IGNORE_CASE)
     }
 
-    override val checkType = CheckType.HTTP
+    override val jobType = JobType.HTTP
 
-    override fun runJob(jobRequest: JobRequest) = computeJobResult(checkType, jobRequest) { runHttpJob(it) }
+    override fun runJob(jobRequest: JobRequest) = computeJobResult(jobType, jobRequest) { runHttpJob(it) }
 
     private fun runHttpJob(jobRequest: JobRequest): String {
         val request = buildRequest(jobRequest)

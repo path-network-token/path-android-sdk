@@ -7,21 +7,21 @@ import java.io.IOException
 import java.net.ServerSocket
 import java.net.Socket
 
-fun Socket.readText(maxSize: Int): String {
+internal fun Socket.readText(maxSize: Int): String {
     ByteArrayOutputStream(maxSize).use {
         getInputStream().copyTo(it)
         return String(it.toByteArray())
     }
 }
 
-fun Socket.writeText(payload: String) {
+internal fun Socket.writeText(payload: String) {
     this.getOutputStream().bufferedWriter().apply {
         write(payload)
         flush()
     }
 }
 
-fun Response.getBody(): ResponseBody {
+internal fun Response.getBody(): ResponseBody {
     val body = body()
     if (!isSuccessful) {
         throw IOException("Unsuccessful response code: ${code()}, body: $body")
@@ -32,7 +32,7 @@ fun Response.getBody(): ResponseBody {
     return body
 }
 
-fun isPortInUse(port: Int) = try {
+internal fun isPortInUse(port: Int) = try {
     ServerSocket(port).close()
     false
 } catch (e: IOException) {

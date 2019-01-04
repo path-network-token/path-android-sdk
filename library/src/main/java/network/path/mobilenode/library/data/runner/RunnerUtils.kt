@@ -2,17 +2,16 @@ package network.path.mobilenode.library.data.runner
 
 import android.os.SystemClock
 import network.path.mobilenode.library.Constants
-import network.path.mobilenode.library.domain.entity.CheckType
+import network.path.mobilenode.library.domain.entity.JobType
 import network.path.mobilenode.library.domain.entity.JobRequest
 import network.path.mobilenode.library.domain.entity.JobResult
-import network.path.mobilenode.library.domain.entity.Status
 import timber.log.Timber
 import java.io.IOException
 import java.util.concurrent.Callable
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
-internal fun computeJobResult(checkType: CheckType, jobRequest: JobRequest, block: (JobRequest) -> String): JobResult {
+internal fun computeJobResult(jobType: JobType, jobRequest: JobRequest, block: (JobRequest) -> String): JobResult {
     var responseBody = ""
     var isResponseKnown = false
 
@@ -34,21 +33,21 @@ internal fun computeJobResult(checkType: CheckType, jobRequest: JobRequest, bloc
 
     Timber.d("RUNNER: [$jobRequest] => $status")
     return JobResult(
-            checkType = checkType,
-            executionUuid = jobRequest.executionUuid,
-            responseTime = requestDurationMillis,
-            responseBody = responseBody,
-            status = status
+        checkType = jobType,
+        executionUuid = jobRequest.executionUuid,
+        responseTime = requestDurationMillis,
+        responseBody = responseBody,
+        status = status
     )
 }
 
-inline fun <T>runWithTimeout(timeout: Long, crossinline block: () -> T): T {
+internal inline fun <T> runWithTimeout(timeout: Long, crossinline block: () -> T): T {
     val executor = Executors.newSingleThreadExecutor()
     val f = executor.submit(Callable { block() })
     return f.get(timeout, TimeUnit.MILLISECONDS)
 }
 
-inline fun measureRealtimeMillis(block: () -> Unit): Long {
+internal inline fun measureRealtimeMillis(block: () -> Unit): Long {
     val start = SystemClock.elapsedRealtime()
     block()
     return SystemClock.elapsedRealtime() - start

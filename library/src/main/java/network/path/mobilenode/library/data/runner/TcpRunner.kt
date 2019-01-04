@@ -1,7 +1,7 @@
 package network.path.mobilenode.library.data.runner
 
 import network.path.mobilenode.library.Constants
-import network.path.mobilenode.library.domain.entity.CheckType
+import network.path.mobilenode.library.domain.entity.JobType
 import network.path.mobilenode.library.domain.entity.JobRequest
 import network.path.mobilenode.library.domain.entity.endpointHost
 import network.path.mobilenode.library.domain.entity.endpointPortOrDefault
@@ -11,9 +11,9 @@ import java.net.InetSocketAddress
 import javax.net.SocketFactory
 
 internal class TcpRunner : Runner {
-    override val checkType = CheckType.TCP
+    override val jobType = JobType.TCP
 
-    override fun runJob(jobRequest: JobRequest) = computeJobResult(checkType, jobRequest) {
+    override fun runJob(jobRequest: JobRequest) = computeJobResult(jobType, jobRequest) {
         runWithTimeout(Constants.JOB_TIMEOUT_MILLIS) {
             runTcpJob(it)
         }

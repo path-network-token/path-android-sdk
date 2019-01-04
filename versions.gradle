@@ -20,7 +20,11 @@
         timber              : '4.7.1',
         trueTime            : '3.4',
 ].each { key, value ->
+    if (!rootProject.ext.has("versions")) {
+        rootProject.ext["versions"] = [ : ]
+    }
     if (!rootProject.ext.versions.containsKey(key)) {
         rootProject.ext.versions[key] = value
     }
 }
+

@@ -1,16 +1,8 @@
 package network.path.mobilenode.library.domain
 
-import network.path.mobilenode.library.domain.entity.CheckType
-import network.path.mobilenode.library.domain.entity.CheckTypeStatistics
-
-enum class WifiSetting(val value: Int) {
-    WIFI_AND_CELLULAR(0),
-    WIFI_ONLY(1);
-
-    companion object {
-        fun valueOf(value: Int): WifiSetting? = WifiSetting.values().find { it.ordinal == value }
-    }
-}
+import network.path.mobilenode.library.domain.entity.JobType
+import network.path.mobilenode.library.domain.entity.JobTypeStatistics
+import network.path.mobilenode.library.domain.entity.WifiSetting
 
 internal interface PathStorage {
     var walletAddress: String
@@ -20,6 +12,6 @@ internal interface PathStorage {
 
     var proxyDomain: String?
 
-    fun statisticsForType(type: CheckType): CheckTypeStatistics
-    fun recordStatistics(type: CheckType, elapsed: Long): CheckTypeStatistics
+    fun statisticsForType(type: JobType): JobTypeStatistics
+    fun recordStatistics(type: JobType, elapsed: Long): JobTypeStatistics
 }

@@ -3,7 +3,7 @@ package network.path.mobilenode.library.data.runner
 import com.google.gson.Gson
 import network.path.mobilenode.library.Constants
 import network.path.mobilenode.library.data.runner.mtr.Mtr
-import network.path.mobilenode.library.domain.entity.CheckType
+import network.path.mobilenode.library.domain.entity.JobType
 import network.path.mobilenode.library.domain.entity.JobRequest
 import network.path.mobilenode.library.domain.entity.endpointHost
 
@@ -14,9 +14,9 @@ internal class TraceRunner(private val gson: Gson) : Runner {
         }
     }
 
-    override val checkType = CheckType.TRACEROUTE
+    override val jobType = JobType.TRACEROUTE
 
-    override fun runJob(jobRequest: JobRequest) = computeJobResult(checkType, jobRequest) {
+    override fun runJob(jobRequest: JobRequest) = computeJobResult(jobType, jobRequest) {
         runWithTimeout(Constants.TRACEROUTE_JOB_TIMEOUT_MILLIS) {
             runTraceJob(it)
         }
