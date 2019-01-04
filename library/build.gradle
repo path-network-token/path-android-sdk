@@ -3,6 +3,11 @@ apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
 apply plugin: 'com.github.ben-manes.versions'
 
+apply from: '../versions.gradle'
+
+final def LIB_VERSION = '1.0'
+final def LIB_VERSION_CODE = 10000
+
 final def ver = rootProject.ext.versions
 
 android {
@@ -10,8 +15,8 @@ android {
     defaultConfig {
         minSdkVersion ver.minSdk
         targetSdkVersion ver.targetSdk
-        versionCode ver.libVersionCode
-        versionName ver.libVersion
+        versionCode LIB_VERSION_CODE
+        versionName LIB_VERSION
 
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
 
@@ -50,18 +55,19 @@ android {
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
-    // Retrofit
-    implementation "com.squareup.okhttp3:okhttp:$versions.okhttp"
-    implementation "com.squareup.retrofit2:retrofit:$versions.retrofit"
-    implementation "com.squareup.retrofit2:converter-gson:$versions.retrofit"
-    implementation "com.squareup.retrofit2:converter-scalars:$versions.retrofit"
-    implementation "com.squareup.okhttp3:logging-interceptor:$versions.okhttp"
+    // Kotlin
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$versions.kotlin"
 
     // AndroidX
     implementation "androidx.appcompat:appcompat:$versions.androidX"
 
-    // Kotlin
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$versions.kotlin"
+    // Retrofit
+    implementation "com.squareup.okhttp3:okhttp:$versions.okhttp"
+    implementation "com.squareup.okhttp3:logging-interceptor:$versions.okhttp"
+
+    implementation "com.squareup.retrofit2:retrofit:$versions.retrofit"
+    implementation "com.squareup.retrofit2:converter-gson:$versions.retrofit"
+    implementation "com.squareup.retrofit2:converter-scalars:$versions.retrofit"
 
     // GSON
     implementation "com.google.code.gson:gson:$versions.gson"
