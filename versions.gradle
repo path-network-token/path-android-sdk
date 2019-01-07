@@ -1,7 +1,10 @@
-[
+ext.versions = [
         minSdk              : 21,
         compileSdk          : 28,
         targetSdk           : 28,
+
+        libVersion          : '1.0',
+        libVersionCode      : 10000,
 
         androidPlugin       : '3.2.1',
         googleServicesPlugin: '4.0.1',
@@ -22,12 +25,4 @@
         trueTime            : '3.4',
 
         oldJunit            : '4.12',
-].each { key, value ->
-    if (!rootProject.ext.has("versions")) {
-        rootProject.ext["versions"] = [ : ]
-    }
-    if (!rootProject.ext.versions.containsKey(key)) {
-        rootProject.ext.versions[key] = value
-    }
-}
-
+]

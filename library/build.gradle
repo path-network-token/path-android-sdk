@@ -6,9 +6,6 @@ apply plugin: 'com.novoda.bintray-release'
 
 apply from: '../versions.gradle'
 
-final def LIB_VERSION = '1.0'
-final def LIB_VERSION_CODE = 10000
-
 final def ver = rootProject.ext.versions
 
 android {
@@ -16,8 +13,8 @@ android {
     defaultConfig {
         minSdkVersion ver.minSdk
         targetSdkVersion ver.targetSdk
-        versionCode LIB_VERSION_CODE
-        versionName LIB_VERSION
+        versionCode ver.libVersionCode
+        versionName ver.libVersion
 
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
 
@@ -98,7 +95,7 @@ publish {
     artifactId = 'library'
     uploadName = 'path-network-android-sdk'
     repoName='path-network-android-sdk'
-    publishVersion = LIB_VERSION
+    publishVersion = ver.libVersion
     autoPublish = false
     desc = 'Path Network Android fragmework'
     website = 'https://github.com/path-network-token/path-android-sdk'
