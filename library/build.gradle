@@ -2,6 +2,7 @@ apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
 apply plugin: 'com.github.ben-manes.versions'
+apply plugin: 'com.novoda.bintray-release'
 
 apply from: '../versions.gradle'
 
@@ -76,8 +77,29 @@ dependencies {
     implementation "com.github.instacart.truetime-android:library-extension-rx:$versions.trueTime"
     implementation "com.google.android.gms:play-services-location:$versions.location"
     implementation "com.jakewharton.timber:timber:$versions.timber"
+
+    // Testing
+    testImplementation "junit:junit:$versions.oldJunit"
 }
 
 repositories {
     mavenCentral()
+}
+
+// Publishing to BinTray
+final def properties = new Properties()
+properties.load(project.rootProject.file('local.properties').newDataInputStream())
+
+publish {
+    bintrayUser = properties.getProperty("bintray.user")
+    bintrayKey = properties.getProperty("bintray.apikey")
+    userOrg = 'path'
+    groupId = 'network.path.mobilenode'
+    artifactId = 'library'
+    uploadName = 'path-network-android-sdk'
+    repoName='path-network-android-sdk'
+    publishVersion = LIB_VERSION
+    autoPublish = false
+    desc = 'Path Network Android fragmework'
+    website = 'https://github.com/path-network-token/path-android-sdk'
 }

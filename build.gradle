@@ -12,7 +12,8 @@ buildscript {
         classpath "com.android.tools.build:gradle:$versions.androidPlugin"
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$versions.kotlin"
         classpath "com.github.ben-manes:gradle-versions-plugin:$versions.versionsPlugin"
-
+        classpath "com.novoda:bintray-release:$versions.bintrayPlugin"
+        
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
     }

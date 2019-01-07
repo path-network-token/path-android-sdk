@@ -6,6 +6,7 @@
         androidPlugin       : '3.2.1',
         googleServicesPlugin: '4.0.1',
         versionsPlugin      : '0.20.0',
+        bintrayPlugin       : '0.9',
 
         kotlin              : '1.3.11',
 
@@ -19,6 +20,8 @@
 
         timber              : '4.7.1',
         trueTime            : '3.4',
+
+        oldJunit            : '4.12',
 ].each { key, value ->
     if (!rootProject.ext.has("versions")) {
         rootProject.ext["versions"] = [ : ]
