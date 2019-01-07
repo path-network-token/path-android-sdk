@@ -1,0 +1,18 @@
+<resources>
+    <string name="app_name">Path SDK Example</string>
+
+    <string name="no_data">No data</string>
+
+    <string name="status_connected">Connected</string>
+    <string name="status_proxy">Connected via proxy</string>
+    <string name="status_disconnected">Disconnected</string>
+
+    <string name="http_checks">Http checks</string>
+    <string name="tcp_checks">TCP checks</string>
+    <string name="udp_checks">Http checks</string>
+    <string name="traceroute_checks">Traceroute checks</string>
+    <string name="dns_checks">DNS checks</string>
+    <string name="unknown_checks">Unknown checks</string>
+    <string name="other_checks">Other checks</string>
+
+</resources>
