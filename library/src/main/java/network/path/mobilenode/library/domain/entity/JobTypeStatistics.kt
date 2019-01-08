@@ -16,8 +16,8 @@ data class JobTypeStatistics(val type: JobType?, val count: Long, val totalLaten
     val averageLatency get() = if (count > 0) totalLatencyMillis / count else 0L
 
     internal fun add(latency: Long): JobTypeStatistics =
-            JobTypeStatistics(type, count + 1, totalLatencyMillis + latency)
+        JobTypeStatistics(type, count + 1, totalLatencyMillis + latency)
 
-    internal fun addOther(other: JobTypeStatistics) =
-            JobTypeStatistics(type, count + other.count, totalLatencyMillis + other.totalLatencyMillis)
+    fun addOther(other: JobTypeStatistics) =
+        JobTypeStatistics(type, count + other.count, totalLatencyMillis + other.totalLatencyMillis)
 }

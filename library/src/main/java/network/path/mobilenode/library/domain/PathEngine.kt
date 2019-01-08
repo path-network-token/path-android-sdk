@@ -17,7 +17,7 @@ internal interface PathEngine {
     val status: ConnectionStatus
     val nodeId: String?
     val jobList: JobList?
-    val isRunning: Boolean
+    val isJobExecutionRunning: Boolean
 
     // Initializes connection and starts retrieving (by either listening or polling) jobs
     fun start()

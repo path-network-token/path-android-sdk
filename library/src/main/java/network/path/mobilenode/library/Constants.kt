@@ -5,6 +5,9 @@ import java.util.concurrent.TimeUnit
 internal object Constants {
     const val PATH_API_VERSION = "1.0.1"
 
+    const val HTTP_PROD_URL = "https://jobs-api.path.network/"
+    const val HTTP_TEST_URL = "http://jobs-api.dev.udpflood.net/"
+
     const val PATH_DEFAULT_WALLET_ADDRESS = "0x0000000000000000000000000000000000000000"
 
     const val JOB_TIMEOUT_MILLIS = 10_000L
@@ -23,4 +26,5 @@ internal object Constants {
     const val LOCALHOST = "127.0.0.1"
     val SS_LOCAL_PORT = if (BuildConfig.DEBUG) 1091 else 1081
     val SIMPLE_OBFS_PORT = if (BuildConfig.DEBUG) 1092 else 1082
+
 }

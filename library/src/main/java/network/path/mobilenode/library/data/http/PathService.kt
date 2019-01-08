@@ -1,7 +1,7 @@
 package network.path.mobilenode.library.data.http
 
 import com.google.gson.Gson
-import network.path.mobilenode.library.BuildConfig
+import network.path.mobilenode.library.Constants
 import network.path.mobilenode.library.domain.entity.CheckIn
 import network.path.mobilenode.library.domain.entity.JobList
 import network.path.mobilenode.library.domain.entity.JobRequest
@@ -27,11 +27,12 @@ internal interface PathService {
 }
 
 internal class PathServiceImpl(
-        okHttpClient: OkHttpClient,
-        gson: Gson
+    okHttpClient: OkHttpClient,
+    gson: Gson,
+    isTest: Boolean
 ) : PathService by Retrofit.Builder()
-        .baseUrl(BuildConfig.HTTP_SERVER_URL)
-        .addConverterFactory(GsonConverterFactory.create(gson))
-        .client(okHttpClient)
-        .build()
-        .create(PathService::class.java)
+    .baseUrl(if (isTest) Constants.HTTP_TEST_URL else Constants.HTTP_PROD_URL)
+    .addConverterFactory(GsonConverterFactory.create(gson))
+    .client(okHttpClient)
+    .build()
+    .create(PathService::class.java)

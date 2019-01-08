@@ -16,13 +16,7 @@ import network.path.mobilenode.library.data.http.PathHttpEngine
 import network.path.mobilenode.library.data.runner.PathJobExecutorImpl
 import network.path.mobilenode.library.data.storage.PathStorageImpl
 import network.path.mobilenode.library.domain.PathSystem.Companion.create
-import network.path.mobilenode.library.domain.entity.JobType
-import network.path.mobilenode.library.domain.entity.JobTypeStatistics
-import network.path.mobilenode.library.domain.entity.ConnectionStatus
-import network.path.mobilenode.library.domain.entity.JobList
-import network.path.mobilenode.library.domain.entity.JobRequest
-import network.path.mobilenode.library.domain.entity.NodeInfo
-import network.path.mobilenode.library.domain.entity.WifiSetting
+import network.path.mobilenode.library.domain.entity.*
 import network.path.mobilenode.library.utils.CustomThreadPoolManager
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -42,11 +36,12 @@ import java.util.concurrent.TimeUnit
  */
 class PathSystem
 internal constructor(
-        private val engine: PathEngine,
-        private val storage: PathStorage,
-        private val jobExecutor: PathJobExecutor,
-        private val networkMonitor: NetworkMonitor,
-        private val threadManager: CustomThreadPoolManager
+    val isTest: Boolean,
+    private val engine: PathEngine,
+    private val storage: PathStorage,
+    private val jobExecutor: PathJobExecutor,
+    private val networkMonitor: NetworkMonitor,
+    private val threadManager: CustomThreadPoolManager
 ) {
     companion object {
         private var INSTANCE: PathSystem? = null
@@ -55,43 +50,53 @@ internal constructor(
          * Creates singleton instance of [PathSystem] class.
          *
          * @param [context] Android context which is necessary for some internal sub-systems to work. Can be application context.
+         * @param [isTest] **true** to connect to test servers, **false** otherwise.
          */
-        fun create(context: Context): PathSystem {
+        fun create(context: Context, isTest: Boolean = false): PathSystem {
             if (INSTANCE == null) {
                 val gson = createLenientGson()
                 val threadManager = CustomThreadPoolManager()
-                val okHttpClient = createOkHttpClient()
+                val okHttpClient = createOkHttpClient(isTest)
                 val networkMonitor = NetworkMonitor(context)
                 val locationProvider = LastLocationProvider(context)
-                val storage = PathStorageImpl(context)
-                val engine = PathHttpEngine(context, locationProvider, networkMonitor, okHttpClient, gson, storage, threadManager)
+                val storage = PathStorageImpl(context, isTest)
+                val engine = PathHttpEngine(
+                    context,
+                    locationProvider,
+                    networkMonitor,
+                    okHttpClient,
+                    gson,
+                    storage,
+                    threadManager,
+                    isTest
+                )
                 val jobExecutor = PathJobExecutorImpl(okHttpClient, storage, gson)
-                INSTANCE = PathSystem(engine, storage, jobExecutor, networkMonitor, threadManager)
+                INSTANCE = PathSystem(isTest, engine, storage, jobExecutor, networkMonitor, threadManager)
             }
             return INSTANCE!!
         }
 
         private fun createLenientGson(): Gson = GsonBuilder()
-                .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
-                .create()
+            .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
+            .create()
 
-        private fun createOkHttpClient(): OkHttpClient = OkHttpClient.Builder()
-                .readTimeout(Constants.JOB_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
-                .writeTimeout(Constants.JOB_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
-                .connectTimeout(Constants.JOB_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
-                .addInterceptor { chain ->
-                    try {
-                        chain.proceed(chain.request())
-                    } catch (e: Throwable) {
-                        throw if (e is IOException) e else IOException(e)
-                    }
+        private fun createOkHttpClient(isTest: Boolean): OkHttpClient = OkHttpClient.Builder()
+            .readTimeout(Constants.JOB_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
+            .writeTimeout(Constants.JOB_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
+            .connectTimeout(Constants.JOB_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
+            .addInterceptor { chain ->
+                try {
+                    chain.proceed(chain.request())
+                } catch (e: Throwable) {
+                    throw if (e is IOException) e else IOException(e)
                 }
-                .addInterceptor(HttpLoggingInterceptor().apply {
-                    level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY else HttpLoggingInterceptor.Level.NONE
+            }
+            .addInterceptor(HttpLoggingInterceptor().apply {
+                level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY else HttpLoggingInterceptor.Level.NONE
 //            level = HttpLoggingInterceptor.Level.BODY
-                })
-                .dns(CustomDns())
-                .build()
+            })
+            .dns(CustomDns(isTest))
+            .build()
 
     }
 
@@ -109,7 +114,7 @@ internal constructor(
         /**
          * This callback is invoked when ID of the node is updated by the backend.
          *
-         * Initially node ID is null and gets updated after the first successful check-in to the backend.
+         * Initially node ID is **null** and gets updated after the first successful check-in to the backend.
          * Since then received value of node ID is retained locally and never gets changed afterwards.
          */
         fun onNodeId(nodeId: String?)
@@ -125,10 +130,10 @@ internal constructor(
         /**
          * This callback is invoked when job execution status is changed.
          *
-         * Job execution can be either active or paused. In either case check-ins are still happening on a regular basis.
-         * The only difference is that new jobs are not requested in paused state during check-in.
+         * Job execution can be either active or paused. In either case check-ins will still be happening on a regular basis.
+         * The only difference is that new jobs are not requested in paused state during check-ins.
          *
-         * @param [isRunning] New value of job execution. true if job execution is active, false if job execution is paused.
+         * @param [isRunning] New value of job execution. **true** if job execution is active, **false** if job execution is paused.
          */
         fun onRunningChanged(isRunning: Boolean)
 
@@ -137,8 +142,9 @@ internal constructor(
          *
          * Statistics is stored locally and gets wiped after uninstall. Each time job is executed statistics gets updated and
          * this callback is called with updated value.
+         * Statistic values are sorted by count and average latency.
          *
-         * @param [statistics] Updated statistics.
+         * @param [statistics] Latest statistics.
          */
         fun onStatisticsChanged(statistics: List<JobTypeStatistics>)
     }
@@ -160,18 +166,24 @@ internal constructor(
     fun removeListener(l: Listener) = listeners.remove(l)
 
     /**
+     * **true** if [start()] was called, **false** if [start()] was not called or [stop()] was called afterwards.
+     */
+    var isStarted = false
+        private set
+    /**
      * Current value of [ConnectionStatus].
      *
-     * Initial value is [ConnectionStatus.LOOKING]. If latest check-in was successful this value is [ConnectionStatus.CONNECTED] or [ConnectionStatus.PROXY]
+     * Initial value is [ConnectionStatus.LOOKING].
+     * If latest check-in was successful this value is [ConnectionStatus.CONNECTED] or [ConnectionStatus.PROXY]
      * based on the fact whether shadowsocks proxy was used or not.
      * This value is [ConnectionStatus.DISCONNECTED] if there was unsuccessful check-in after successful.
-     * (This value will stay [ConnectionStatus.LOOKING] until successful check-in)
+     * (This value will stay [ConnectionStatus.LOOKING] until first successful check-in).
      */
     val status: ConnectionStatus get() = engine.status
     /**
      * Current value of node ID.
      *
-     * @returns null before any successful check-in, non-null afterwards.
+     * @return **null** before any successful check-in, non-null afterwards.
      */
     val nodeId: String? get() = engine.nodeId
     /**
@@ -181,28 +193,24 @@ internal constructor(
     /**
      * Current status of job execution status.
      *
-     * @returns true if job execution is active, false if paused.
+     * @return **true** if job execution is active, **false** if paused.
      */
-    val isRunning: Boolean get() = engine.isRunning
+    val isJobExecutionRunning: Boolean get() = engine.isJobExecutionRunning
 
-    // Activation
     /**
      * Helper value which can be used to automatically start [PathSystem].
      *
      * Imagine, that you don't want to auto-start [PathSystem] before user accepts some kind of license agreement or in any other conditions.
-     * [isActivated] can be used to store user acceptance to later auto-start [PathSystem] on app launch (or device boot).
-     * [isActivated] value is not used by internal classes in any way. It is just stored locally on the device.
+     * [autoStart] can be used to store user acceptance to later auto-start [PathSystem] on app launch (or device boot).
+     * [autoStart] value is not used by internal classes in any way. It is just stored locally on the device.
      *
-     * @returns true if user activated [PathSystem] before, false otherwise. Default value is false
+     * Default value is **false**.
      */
-    val isActivated: Boolean get() = storage.isActivated
-
-    /**
-     * Changes [isActivated] value to true.
-     */
-    fun activate() {
-        storage.isActivated = true
-    }
+    var autoStart: Boolean
+        get() = storage.autoStart
+        set(value) {
+            storage.autoStart = value
+        }
 
     // Wi-Fi setting
     /**
@@ -221,8 +229,8 @@ internal constructor(
     /**
      * Current value of ETH wallet address to receive payment for job execution.
      *
-     * Default value is 0x0000000000000000000000000000000000000000.
-     * Make sure you provide a valid wallet address otherwise payment will go to nowhere.
+     * Default value is **0x0000000000000000000000000000000000000000**.
+     * Make sure you provide a valid wallet address otherwise payments will go to nowhere.
      */
     var walletAddress: String
         get() = storage.walletAddress
@@ -230,7 +238,7 @@ internal constructor(
             storage.walletAddress = value
         }
     /**
-     * @return true is default wallet address is currently in use, false otherwise.
+     * @return **true** is default wallet address is currently in use, **false** otherwise.
      */
     val hasAddress: Boolean get() = storage.walletAddress != Constants.PATH_DEFAULT_WALLET_ADDRESS
 
@@ -286,20 +294,26 @@ internal constructor(
      * None of the listeners' callbacks will be called until this method is invoked.
      */
     fun start() {
-        jobExecutor.start()
-        networkMonitor.start()
+        synchronized(this) {
+            if (!isStarted) {
+                isStarted = true
+                jobExecutor.start()
+                networkMonitor.start()
 
-        engine.addListener(engineListener)
-        engine.start()
+                engine.addListener(engineListener)
+                engine.start()
 
-        // Initial statistics value
-        updateStatistics()
+                // Initial statistics value
+                updateStatistics()
+            }
+        }
     }
 
     /**
      * Toggles job execution status.
      *
-     * If current value is active, changes it to paused. If current value is paused, changes it to active.
+     * If current value is active, changes it to paused.
+     * If current value is paused, changes it to active.
      */
     fun toggle() {
         engine.toggle()
@@ -309,36 +323,36 @@ internal constructor(
      * Stops any jobs executions and disconnects from the Path API.
      */
     fun stop() {
-        engine.stop()
-        engine.removeListener(engineListener)
+        synchronized(this) {
+            if (isStarted) {
+                isStarted = false
+                engine.stop()
+                engine.removeListener(engineListener)
 
-        networkMonitor.stop()
-        jobExecutor.stop()
+                networkMonitor.stop()
+                jobExecutor.stop()
+            }
+        }
     }
 
     // Private methods
     private fun updateStatistics() {
-        val allStats = JobType.values()
-                .map { storage.statisticsForType(it) }
-                .sortedWith(compareByDescending(JobTypeStatistics::count)
-                        .then(compareByDescending(JobTypeStatistics::averageLatency)))
-
-        val otherStats = allStats.subList(2, allStats.size - 1)
-                .fold(JobTypeStatistics(null, 0, 0)) { total, stats ->
-                    total.addOther(stats)
-                }
-
-        statistics = listOf(allStats[0], allStats[1], otherStats)
+        statistics = JobType.values()
+            .map { storage.statisticsForType(it) }
+            .sortedWith(
+                compareByDescending(JobTypeStatistics::count)
+                    .then(compareByDescending(JobTypeStatistics::averageLatency))
+            )
     }
 
     @SuppressLint("CheckResult")
     private fun initTrueTime() {
         TrueTimeRx.build()
-                .initializeRx("time.google.com")
-                .subscribeOn(Schedulers.io())
-                .subscribe(
-                        { date -> Timber.d("TRUE TIME: initialised [$date]") },
-                        { throwable -> Timber.w("TRUE TIME: initialisation failed: $throwable") }
-                )
+            .initializeRx("time.google.com")
+            .subscribeOn(Schedulers.io())
+            .subscribe(
+                { date -> Timber.d("TRUE TIME: initialised [$date]") },
+                { throwable -> Timber.w("TRUE TIME: initialisation failed: $throwable") }
+            )
     }
 }

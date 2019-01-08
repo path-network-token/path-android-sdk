@@ -1,0 +1,6 @@
+ext.versions.putAll([
+        androidCoreKtx      : '1.0.1',
+        androidFragmentKtx  : '1.0.0',
+        constraintLayout    : '1.1.3',
+        lifecycle           : '2.0.0',
+])

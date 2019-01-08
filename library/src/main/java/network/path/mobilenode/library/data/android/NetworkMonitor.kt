@@ -16,9 +16,11 @@ internal class NetworkMonitor(private val context: Context) {
     }
 
     var isConnected = false
-
-    private val intentFilter = IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION)
+        private set
     val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+
+    @Suppress("DEPRECATION")
+    private val intentFilter = IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION)
 
     private val networkReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -31,13 +33,8 @@ internal class NetworkMonitor(private val context: Context) {
     // Listeners
     private val listeners = mutableListOf<Listener>()
 
-    fun addListener(l: Listener) {
-        listeners.add(l)
-    }
-
-    fun removeListener(l: Listener) {
-        listeners.remove(l)
-    }
+    fun addListener(l: Listener) = listeners.add(l)
+    fun removeListener(l: Listener) = listeners.remove(l)
 
     // Lifecycle
     init {
@@ -49,7 +46,8 @@ internal class NetworkMonitor(private val context: Context) {
     fun start() {
         checkStatus()
         when {
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.N -> connectivityManager.registerDefaultNetworkCallback(networkCallback)
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.N ->
+                connectivityManager.registerDefaultNetworkCallback(networkCallback)
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP -> {
                 val builder = NetworkRequest.Builder()
                 connectivityManager.registerNetworkCallback(builder.build(), networkCallback)

@@ -7,7 +7,7 @@ import network.path.mobilenode.library.domain.entity.WifiSetting
 internal interface PathStorage {
     var walletAddress: String
     var nodeId: String?
-    var isActivated: Boolean
+    var autoStart: Boolean
     var wifiSetting: WifiSetting
 
     var proxyDomain: String?

@@ -11,14 +11,25 @@
 >
 
     <TextView
+            android:id="@+id/labelMode"
+            style="@style/Text.Header"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="TEST"
+    />
+
+    <TextView
             android:id="@+id/labelStatus"
             style="@style/Text.Label"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Connection status"
+            android:text="@string/label_connection_status"
             app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/labelMode"
             app:layout_constraintEnd_toStartOf="@id/valueStatus"
-            app:layout_constraintTop_toTopOf="parent"
     />
 
     <TextView
@@ -26,11 +37,11 @@
             style="@style/Text.Value"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Looking"
-            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/labelMode"
             app:layout_constraintStart_toEndOf="@id/labelStatus"
             app:layout_constraintBaseline_toBaselineOf="@id/labelStatus"
             app:layout_constraintEnd_toEndOf="parent"
+            tools:text="Looking"
     />
 
     <TextView
@@ -38,7 +49,7 @@
             style="@style/Text.Label"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Job execution status"
+            android:text="@string/label_job_execution_status"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toStartOf="@id/valueStatus"
             app:layout_constraintTop_toBottomOf="@id/labelStatus"
@@ -49,11 +60,11 @@
             style="@style/Text.Value"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Running"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toEndOf="@id/labelRunning"
             app:layout_constraintBaseline_toBaselineOf="@id/labelRunning"
             app:layout_constraintEnd_toEndOf="parent"
+            tools:text="Running"
     />
 
     <TextView
@@ -61,8 +72,7 @@
             style="@style/Text.Header"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Node Information"
-            android:gravity="center_horizontal"
+            android:text="@string/label_node_information"
             android:layout_marginTop="12dp"
             android:layout_marginBottom="12dp"
             app:layout_constraintTop_toBottomOf="@id/labelRunning"
@@ -76,7 +86,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:maxLines="1"
-            android:text="Node ID"
+            android:text="@string/label_node_id"
             app:layout_constraintEnd_toStartOf="@+id/guideline"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintBaseline_toBaselineOf="@id/value0"
@@ -89,7 +99,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:maxLines="1"
-            android:text="Network"
+            android:text="@string/label_network"
             app:layout_constraintEnd_toStartOf="@+id/guideline"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintBaseline_toBaselineOf="@id/value1"
@@ -102,7 +112,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:maxLines="1"
-            android:text="Operator"
+            android:text="@string/label_operator"
             app:layout_constraintEnd_toStartOf="@+id/guideline"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintBaseline_toBaselineOf="@id/value2"
@@ -115,7 +125,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:maxLines="1"
-            android:text="ASN"
+            android:text="@string/label_asn"
             app:layout_constraintEnd_toStartOf="@+id/guideline"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintBaseline_toBaselineOf="@id/value3"
@@ -128,7 +138,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:maxLines="1"
-            android:text="Location"
+            android:text="@string/label_location"
             app:layout_constraintEnd_toStartOf="@+id/guideline"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintBaseline_toBaselineOf="@id/value4"
@@ -205,8 +215,7 @@
             style="@style/Text.Header"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Statistics"
-            android:gravity="center_horizontal"
+            android:text="@string/label_statistics"
             android:layout_marginTop="12dp"
             android:layout_marginBottom="12dp"
             app:layout_constraintTop_toBottomOf="@id/value4"
@@ -219,7 +228,7 @@
             style="@style/Text.Label"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="HTTP"
+            android:text="@string/label_total_jobs"
             app:layout_constraintEnd_toStartOf="@+id/guideline2"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintBaseline_toBaselineOf="@id/valueStats1"
@@ -231,11 +240,11 @@
             style="@style/Text.Label"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="TCP"
             app:layout_constraintEnd_toStartOf="@+id/guideline2"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintBaseline_toBaselineOf="@id/valueStats2"
             app:layout_constraintTop_toBottomOf="@+id/labelStats1"
+            tools:text="HTTP"
     />
 
     <TextView
@@ -243,11 +252,11 @@
             style="@style/Text.Label"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="UDP"
             app:layout_constraintEnd_toStartOf="@+id/guideline2"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintBaseline_toBaselineOf="@id/valueStats3"
             app:layout_constraintTop_toBottomOf="@+id/valueStats2"
+            tools:text="TCP"
     />
 
     <TextView
@@ -255,11 +264,11 @@
             style="@style/Text.Label"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Traceroute"
             app:layout_constraintEnd_toStartOf="@+id/guideline2"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintBaseline_toBaselineOf="@id/valueStats4"
             app:layout_constraintTop_toBottomOf="@+id/labelStats3"
+            tools:text="Other"
     />
 
     <androidx.constraintlayout.widget.Guideline
@@ -275,10 +284,10 @@
             style="@style/Text.Value"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="0"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@+id/guideline2"
             app:layout_constraintTop_toBottomOf="@id/labelStats"
+            tools:text="0"
     />
 
     <TextView
@@ -286,10 +295,10 @@
             style="@style/Text.Value"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="0"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@+id/guideline2"
             app:layout_constraintTop_toBottomOf="@+id/valueStats1"
+            tools:text="0"
     />
 
     <TextView
@@ -297,10 +306,10 @@
             style="@style/Text.Value"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="0"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@+id/guideline2"
             app:layout_constraintTop_toBottomOf="@+id/valueStats2"
+            tools:text="0"
     />
 
     <TextView
@@ -308,20 +317,40 @@
             style="@style/Text.Value"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="0"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@+id/guideline2"
             app:layout_constraintTop_toBottomOf="@+id/valueStats3"
+            tools:text="0"
     />
 
+    <CheckBox
+            android:id="@+id/checkboxAutoStart"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="@string/label_auto_start_on_launch"
+            app:layout_constraintTop_toBottomOf="@id/valueStats4"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+    />
+
+    <CheckBox
+            android:id="@+id/checkboxWifiOnly"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="@string/label_execute_jobs_on_wi_fi_only"
+            app:layout_constraintTop_toBottomOf="@id/checkboxAutoStart"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+    />
 
     <Button
             android:id="@+id/buttonStatus"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
-            android:text="Start"
-            app:layout_constraintTop_toBottomOf="@id/valueStats4"
+            android:text="@string/button_start"
+            app:layout_constraintTop_toBottomOf="@id/checkboxWifiOnly"
             app:layout_constraintEnd_toStartOf="@id/buttonToggle"
             app:layout_constraintStart_toStartOf="parent"
     />
@@ -331,7 +360,7 @@
             android:id="@+id/buttonToggle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Pause"
+            android:text="@string/button_pause"
             app:layout_constraintTop_toTopOf="@id/buttonStatus"
             app:layout_constraintStart_toEndOf="@id/buttonStatus"
             app:layout_constraintEnd_toEndOf="parent"

@@ -25,7 +25,7 @@ internal class CustomThreadPoolManager {
         }
     }
 
-    fun stop(): List<Runnable> = executorService.shutdownNow()
+    fun destroy(): List<Runnable> = executorService.shutdownNow()
 
     private class BackgroundThreadFactory : ThreadFactory {
         private var currentTag = AtomicInteger(1)

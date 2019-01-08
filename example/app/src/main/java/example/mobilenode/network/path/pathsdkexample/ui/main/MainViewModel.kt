@@ -8,11 +8,11 @@ import network.path.mobilenode.library.domain.PathSystem
 import network.path.mobilenode.library.domain.entity.ConnectionStatus
 import network.path.mobilenode.library.domain.entity.JobTypeStatistics
 import network.path.mobilenode.library.domain.entity.NodeInfo
+import network.path.mobilenode.library.domain.entity.WifiSetting
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
-    private val pathSystem = PathSystem.create(application.applicationContext)
-    var isStarted = false
-        private set
+    private val pathSystem = PathSystem.create(application.applicationContext, false)
+    val isStarted get() = pathSystem.isStarted
 
     private val _nodeId = MutableLiveData<String?>()
     val nodeId: LiveData<String?> = _nodeId
@@ -28,6 +28,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _statistics = MutableLiveData<List<JobTypeStatistics>>()
     val statistics: LiveData<List<JobTypeStatistics>> = _statistics
+
+    val isTest get() = pathSystem.isTest
+
+    var autoStart: Boolean
+        get() = pathSystem.autoStart
+        set(value) {
+            pathSystem.autoStart = value
+        }
+
+    var isWifiOnly: Boolean
+        get() = pathSystem.wifiSetting == WifiSetting.WIFI_ONLY
+        set(value) {
+            pathSystem.wifiSetting = if (value) WifiSetting.WIFI_ONLY else WifiSetting.WIFI_AND_CELLULAR
+        }
 
     private val listener = object : PathSystem.Listener {
         override fun onNodeId(nodeId: String?) = updateNodeId(nodeId)
@@ -46,26 +60,25 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         updateStatus(pathSystem.status)
         updateNodeId(pathSystem.nodeId)
         updateNodeInfo(pathSystem.nodeInfo)
-        updateRunning(pathSystem.isRunning)
+        updateRunning(pathSystem.isJobExecutionRunning)
         updateStats(pathSystem.statistics)
+
+        if (pathSystem.autoStart && !pathSystem.isStarted) {
+            pathSystem.start()
+        }
     }
 
-    fun start() {
-        if (!isStarted) {
+    fun toggleConnection(): Boolean {
+        if (pathSystem.isStarted) {
+            pathSystem.stop()
+        } else {
             pathSystem.start()
-            isStarted = true
         }
+        return pathSystem.isStarted
     }
 
     fun toggle() {
         pathSystem.toggle()
-    }
-
-    fun stop() {
-        if (isStarted) {
-            pathSystem.stop()
-            isStarted = false
-        }
     }
 
     override fun onCleared() {

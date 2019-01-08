@@ -4,8 +4,6 @@ apply plugin: 'kotlin-android-extensions'
 apply plugin: 'com.github.ben-manes.versions'
 apply plugin: 'com.novoda.bintray-release'
 
-apply from: '../versions.gradle'
-
 final def ver = rootProject.ext.versions
 
 android {
@@ -17,8 +15,6 @@ android {
         versionName ver.libVersion
 
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
-
-        buildConfigField 'String', 'HTTP_SERVER_URL', '"http://jobs-api.dev.udpflood.net/"'
 
         consumerProguardFiles 'proguard-rules.pro'
 
@@ -34,7 +30,6 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            buildConfigField 'String', 'HTTP_SERVER_URL', '"https://jobs-api.path.network/"'
         }
     }
 

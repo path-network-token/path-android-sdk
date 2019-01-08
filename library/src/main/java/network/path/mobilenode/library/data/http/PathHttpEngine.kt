@@ -11,12 +11,7 @@ import network.path.mobilenode.library.data.android.NetworkMonitor
 import network.path.mobilenode.library.domain.DomainGenerator
 import network.path.mobilenode.library.domain.PathEngine
 import network.path.mobilenode.library.domain.PathStorage
-import network.path.mobilenode.library.domain.entity.CheckIn
-import network.path.mobilenode.library.domain.entity.ConnectionStatus
-import network.path.mobilenode.library.domain.entity.JobList
-import network.path.mobilenode.library.domain.entity.JobRequest
-import network.path.mobilenode.library.domain.entity.JobResult
-import network.path.mobilenode.library.domain.entity.WifiSetting
+import network.path.mobilenode.library.domain.entity.*
 import network.path.mobilenode.library.utils.CustomThreadPoolManager
 import network.path.mobilenode.library.utils.Executable
 import network.path.mobilenode.library.utils.GuardedProcessPool
@@ -41,7 +36,8 @@ internal class PathHttpEngine(
         private val okHttpClient: OkHttpClient,
         private val gson: Gson,
         private val storage: PathStorage,
-        private val threadManager: CustomThreadPoolManager
+        private val threadManager: CustomThreadPoolManager,
+        private var isTest: Boolean
 ) : PathEngine, NetworkMonitor.Listener {
     companion object {
         private const val HEARTBEAT_INTERVAL_MS = 30_000L
@@ -90,13 +86,14 @@ internal class PathHttpEngine(
             listeners.forEach { it.onJobListReceived(value) }
         }
 
-    override var isRunning = true
+    override var isJobExecutionRunning = true
         private set(value) {
             field = value
             listeners.forEach { it.onRunning(value) }
         }
 
     override fun start() {
+        lastLocationProvider.start()
         networkMonitor.addListener(this)
 
         httpService = getHttpService(false)
@@ -131,22 +128,21 @@ internal class PathHttpEngine(
     }
 
     override fun stop() {
-        threadManager.stop()
-
         // Kill them all
         Executable.killAll(context)
 
         networkMonitor.removeListener(this)
+        lastLocationProvider.stop()
 
         // Reset values to defaults
         status = ConnectionStatus.LOOKING
         jobList = null
-        isRunning = true
+        isJobExecutionRunning = true
     }
 
     override fun toggle() {
-        isRunning = !isRunning
-        Timber.d("HTTP: changed status to [$isRunning]")
+        isJobExecutionRunning = !isJobExecutionRunning
+        Timber.d("HTTP: changed status to [$isJobExecutionRunning]")
     }
 
     override fun addListener(l: PathEngine.Listener) = listeners.add(l)
@@ -163,7 +159,8 @@ internal class PathHttpEngine(
         checkInTask = threadManager.run("checkIn", delay) {
             Timber.d("HTTP: Checking in...")
             val result = executeServiceCall {
-                httpService?.checkIn(storage.nodeId ?: "", createCheckInMessage())
+                val checkIn = createCheckInMessage()
+                if (checkIn != null) httpService?.checkIn(storage.nodeId ?: "", checkIn) else null
             }
             if (result != null) {
                 processJobs(result)
@@ -232,11 +229,12 @@ internal class PathHttpEngine(
         listeners.forEach { it.onRequestReceived(request) }
     }
 
-    private fun createCheckInMessage(): CheckIn {
+    private fun createCheckInMessage(): CheckIn? {
         val location = try {
             lastLocationProvider.location()
         } catch (e: Exception) {
-            null
+            Timber.w("HTTP: could not get location: $e")
+            return null
         }
         var requestJobs = true
         if (storage.wifiSetting == WifiSetting.WIFI_ONLY) {
@@ -253,7 +251,7 @@ internal class PathHttpEngine(
                 Timber.d("HTTP: network info [$networkInfo], setting [${storage.wifiSetting}], requestJobs = $requestJobs")
             }
         }
-        val jobsToRequest = if (isRunning && requestJobs) max(MAX_JOBS - currentExecutionUuids.size, 0) else 0
+        val jobsToRequest = if (isJobExecutionRunning && requestJobs) max(MAX_JOBS - currentExecutionUuids.size, 0) else 0
         return CheckIn(
                 nodeId = storage.nodeId,
                 wallet = storage.walletAddress,
@@ -316,7 +314,7 @@ internal class PathHttpEngine(
             this.useProxy = false
             okHttpClient
         }
-        return PathServiceImpl(client, gson)
+        return PathServiceImpl(client, gson, isTest)
     }
 
     private fun startNativeProcesses() {

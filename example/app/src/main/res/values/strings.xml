@@ -14,5 +14,25 @@
     <string name="dns_checks">DNS checks</string>
     <string name="unknown_checks">Unknown checks</string>
     <string name="other_checks">Other checks</string>
+    <string name="label_total_jobs">Total jobs executed</string>
+    <string name="button_stop">STOP</string>
+    <string name="button_start">START</string>
+    <string name="button_pause">PAUSE</string>
+    <string name="button_resume">RESUME</string>
+    <string name="state_running">Running</string>
+    <string name="state_paused">Paused</string>
+    <string name="label_connection_status">Connection status</string>
+    <string name="label_job_execution_status">Job execution status</string>
+    <string name="label_node_information">Node Information</string>
+    <string name="label_node_id">Node ID</string>
+    <string name="label_network">Network</string>
+    <string name="label_operator">Operator</string>
+    <string name="label_asn">ASN</string>
+    <string name="label_location">Location</string>
+    <string name="label_statistics">Statistics</string>
+    <string name="label_auto_start_on_launch">Auto-start on launch</string>
+    <string name="label_execute_jobs_on_wi_fi_only">Execute jobs on Wi-Fi only</string>
+    <string name="label_test_server">TEST SERVER</string>
+    <string name="label_prod_server">PROD SERVER</string>
 
 </resources>

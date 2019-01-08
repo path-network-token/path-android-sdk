@@ -2,14 +2,19 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
 
+final def ver = rootProject.ext.versions
+
 android {
-    compileSdkVersion 28
+    compileSdkVersion ver.compileSdk
     defaultConfig {
-        applicationId "example.mobilenode.network.path.pathsdkexample"
-        minSdkVersion 21
-        targetSdkVersion 28
+        minSdkVersion ver.minSdk
+        targetSdkVersion ver.targetSdk
+
         versionCode 1
         versionName "1.0"
+
+        applicationId "example.mobilenode.network.path.pathsdkexample"
+
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
@@ -22,21 +27,25 @@ android {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation project(":library")
 
-    implementation 'network.path.mobilenode:library:1.0'
+    // AndroidX
+    implementation "androidx.appcompat:appcompat:$versions.androidX"
+    implementation "androidx.constraintlayout:constraintlayout:$versions.constraintLayout"
+    implementation "androidx.lifecycle:lifecycle-extensions:$versions.lifecycle"
 
-    implementation 'androidx.appcompat:appcompat:1.0.2'
-    implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
-    implementation 'androidx.lifecycle:lifecycle-extensions:2.0.0'
+    implementation "androidx.core:core-ktx:$versions.androidCoreKtx"
+    implementation "androidx.fragment:fragment-ktx:$versions.androidFragmentKtx"
+    implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:$versions.lifecycle"
+    kapt "androidx.lifecycle:lifecycle-compiler:$versions.lifecycle"
 
-    implementation 'androidx.core:core-ktx:1.0.1'
-    implementation 'androidx.fragment:fragment-ktx:1.0.0'
-    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.0.0'
-    kapt 'androidx.lifecycle:lifecycle-compiler:2.0.0'
+    // Kotlin
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$versions.kotlin"
 
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    implementation "com.jakewharton.timber:timber:$versions.timber"
 
-    testImplementation 'junit:junit:4.12'
+    // Testing
+    testImplementation "junit:junit:$versions.oldJunit"
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
 }
