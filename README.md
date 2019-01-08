@@ -18,10 +18,19 @@ Path Android SDK is available in JCenter, so simply add it as a dependency
 ```
 implementation 'network.path.mobilenode:library:${version}'
 ```
+**Please note:** publishing of the library to Jcenter can still be pending. But it is already accessible via BinTray. If JCenter version is not available for you just add this BinTray repo to your main `build.gradle` file:
+```
+allprojects {  
+    repositories {  
+	    // ... your other repos are usually listed here, like google(), jcenter(), etc
+	    // Our 
+        maven { url 'https://dl.bintray.com/path/path-network-android-sdk' }
+    }  
+}
+```
 
-where `${version}` corresponds to published version in [ ![Download](https://api.bintray.com/packages/path/path-network-android-sdk/path-network-android-sdk/images/download.svg?version=1.0.1) ](https://bintray.com/path/path-network-android-sdk/path-network-android-sdk/1.0.1/link)
-## Simple example
-
+where `${version}` corresponds to latest published version in [ ![Download](https://api.bintray.com/packages/path/path-network-android-sdk/path-network-android-sdk/images/download.svg?version=1.0.1) ](https://bintray.com/path/path-network-android-sdk/path-network-android-sdk/1.0.1/link)
+## Usage
 ### Connection
 * Get reference to singleton instance of `PathSystem` in your `onCreate()` method of activity/service:
 ```kotlin
@@ -62,7 +71,7 @@ pathSystem.start()
 pathSystem.stop()
 ```
 
-**Please note:** it is a good idea to create a service class which will call `PathSystem.start()` in `onCreate()` method and call `PathSystem.stop()` in `onDestroy()` method. This way lifecycle of `PathSystem` will be bound to service which can run in the background irrespective of UI state.
+**Please note:** it is a good idea to create a service class which will call `PathSystem.start()` in `onCreate()` method and call `PathSystem.stop()` in `onDestroy()` method. This way lifecycle of `PathSystem` will be bound to service which can run in the background irrespective of UI state of the app.
 
 ### Jobs execution control
 * To pause/resume execution of jobs call `toggle` method on `PathSystem` object (connection to the API will be kept alive):
@@ -79,9 +88,9 @@ pathSystem.wifiSetting = WifiSetting.WIFI_ONLY
 ```
 
 ###  Useful properties
-* You can always get current values which you receive through listener callbacks:
+* You can always get current values from `PathSystem` object which you usually receive through listener callbacks:
 ```kotlin
-// Was PathSystem started?
+// Was PathSystem started? (This value is not avaialable through callbacks)
 val isStarted = pathSystem.isStarted
 // Current status of connection to the backend
 val status = pathSystem.status
