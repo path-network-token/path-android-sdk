@@ -19,8 +19,7 @@ Path Android SDK is available in JCenter, so simply add it as a dependency
 implementation 'network.path.mobilenode:library:${version}'
 ```
 
-where `${version}` corresponds to published version in [Download]
-
+where `${version}` corresponds to published version in [ ![Download](https://api.bintray.com/packages/path/path-network-android-sdk/path-network-android-sdk/images/download.svg?version=1.0.1) ](https://bintray.com/path/path-network-android-sdk/path-network-android-sdk/1.0.1/link)
 ## Simple example
 
 ### Connection
