@@ -14,8 +14,6 @@ android {
         versionCode ver.libVersionCode
         versionName ver.libVersion
 
-        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
-
         consumerProguardFiles 'proguard-rules.pro'
 
         externalNativeBuild {
