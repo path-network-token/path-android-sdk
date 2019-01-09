@@ -46,11 +46,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val listener = object : PathSystem.Listener {
         override fun onNodeId(nodeId: String?) = updateNodeId(nodeId)
 
-        override fun onStatusChanged(status: ConnectionStatus) = updateStatus(status)
+        override fun onConnectionStatusChanged(status: ConnectionStatus) = updateStatus(status)
 
         override fun onNodeInfoReceived(nodeInfo: NodeInfo?) = updateNodeInfo(nodeInfo)
 
-        override fun onRunningChanged(isRunning: Boolean) = updateRunning(isRunning)
+        override fun onJobExecutionStatusChanged(isRunning: Boolean) = updateRunning(isRunning)
 
         override fun onStatisticsChanged(statistics: List<JobTypeStatistics>) = updateStats(statistics)
     }
@@ -78,7 +78,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun toggle() {
-        pathSystem.toggle()
+        pathSystem.toggleJobExecution()
     }
 
     override fun onCleared() {

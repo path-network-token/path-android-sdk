@@ -28,7 +28,7 @@ internal interface PathEngine {
     // Stop any interaction with the server
     fun stop()
 
-    fun toggle()
+    fun toggleJobExecution(): Boolean
 
     fun addListener(l: Listener): Boolean
     fun removeListener(l: Listener): Boolean

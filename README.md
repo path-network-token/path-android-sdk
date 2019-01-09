@@ -41,7 +41,7 @@ Second argument specifies which servers to connect to. If it is **true** it will
 * Add listener to it:
 ```kotlin
 val listener = object : PathSystem.Listener {
-    override fun onStatusChanged(status: ConnectionStatus) {
+    override fun onConnectionStatusChanged(status: ConnectionStatus) {
         // Process connection status change 
     }
     override fun onNodeId(nodeId: String?) {
@@ -50,7 +50,7 @@ val listener = object : PathSystem.Listener {
     override fun onNodeInfoReceived(nodeInfo: NodeInfo?) {
         // Process new node information (ASN, location, etc.)
     }
-    override fun onRunningChanged(isRunning: Boolean) {
+    override fun onJobExecutionStatusChanged(isRunning: Boolean) {
         // Job processing status changed from paused to running or vice versa
     }
     override fun onStatisticsChanged(statistics: List<JobTypeStatistics>) {
@@ -74,9 +74,9 @@ pathSystem.stop()
 **Please note:** it is a good idea to create a service class which will call `PathSystem.start()` in `onCreate()` method and call `PathSystem.stop()` in `onDestroy()` method. This way lifecycle of `PathSystem` will be bound to service which can run in the background irrespective of UI state of the app.
 
 ### Jobs execution control
-* To pause/resume execution of jobs call `toggle` method on `PathSystem` object (connection to the API will be kept alive):
+* To pause/resume execution of jobs call `toggleJobExecution` method on `PathSystem` object:
 ```kotlin
-pathSystem.toggle()
+val isRunning = pathSystem.toggleJobExecution()
 ```
 
 * You can also restrict job execution to Wi-Fi only networks by changing `wifiSetting` property of `PathSystem` object:
@@ -86,6 +86,7 @@ pathSystem.wifiSetting = WifiSetting.WIFI_AND_CELLULAR
 // Jobs are executed only on Wi-Fi networks
 pathSystem.wifiSetting = WifiSetting.WIFI_ONLY 
 ```
+**Please note:** both these settings affect only job execution. Connection to the API will still be kept alive and check-ins will happen on regular basis.
 
 ###  Useful properties
 * You can always get current values from `PathSystem` object which you usually receive through listener callbacks:

@@ -109,7 +109,7 @@ internal constructor(
          *
          * @param [status] New status value
          */
-        fun onStatusChanged(status: ConnectionStatus)
+        fun onConnectionStatusChanged(status: ConnectionStatus)
 
         /**
          * This callback is invoked when ID of the node is updated by the backend.
@@ -135,7 +135,7 @@ internal constructor(
          *
          * @param [isRunning] New value of job execution. **true** if job execution is active, **false** if job execution is paused.
          */
-        fun onRunningChanged(isRunning: Boolean)
+        fun onJobExecutionStatusChanged(isRunning: Boolean)
 
         /**
          * This callback is invoked when executed jobs statistics is changed.
@@ -153,10 +153,10 @@ internal constructor(
      * Helper class with empty implementation of [Listener]. Use it if you only need to override some of the callbacks.
      */
     open class BaseListener : Listener {
-        override fun onStatusChanged(status: ConnectionStatus) {}
+        override fun onConnectionStatusChanged(status: ConnectionStatus) {}
         override fun onNodeId(nodeId: String?) {}
         override fun onNodeInfoReceived(nodeInfo: NodeInfo?) {}
-        override fun onRunningChanged(isRunning: Boolean) {}
+        override fun onJobExecutionStatusChanged(isRunning: Boolean) {}
         override fun onStatisticsChanged(statistics: List<JobTypeStatistics>) {}
     }
 
@@ -254,7 +254,7 @@ internal constructor(
 
     private val engineListener = object : PathEngine.Listener {
         override fun onStatusChanged(status: ConnectionStatus) {
-            listeners.forEach { it.onStatusChanged(status) }
+            listeners.forEach { it.onConnectionStatusChanged(status) }
         }
 
         override fun onRequestReceived(request: JobRequest) {
@@ -280,7 +280,7 @@ internal constructor(
         }
 
         override fun onRunning(isRunning: Boolean) {
-            listeners.forEach { it.onRunningChanged(isRunning) }
+            listeners.forEach { it.onJobExecutionStatusChanged(isRunning) }
         }
     }
 
@@ -314,10 +314,10 @@ internal constructor(
      *
      * If current value is active, changes it to paused.
      * If current value is paused, changes it to active.
+     *
+     * @return Status after change
      */
-    fun toggle() {
-        engine.toggle()
-    }
+    fun toggleJobExecution(): Boolean = engine.toggleJobExecution()
 
     /**
      * Stops any jobs executions and disconnects from the Path API.

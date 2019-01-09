@@ -30,14 +30,14 @@ import java.util.concurrent.Future
 import kotlin.math.max
 
 internal class PathHttpEngine(
-        private val context: Context,
-        private val lastLocationProvider: LastLocationProvider,
-        private val networkMonitor: NetworkMonitor,
-        private val okHttpClient: OkHttpClient,
-        private val gson: Gson,
-        private val storage: PathStorage,
-        private val threadManager: CustomThreadPoolManager,
-        private var isTest: Boolean
+    private val context: Context,
+    private val lastLocationProvider: LastLocationProvider,
+    private val networkMonitor: NetworkMonitor,
+    private val okHttpClient: OkHttpClient,
+    private val gson: Gson,
+    private val storage: PathStorage,
+    private val threadManager: CustomThreadPoolManager,
+    private var isTest: Boolean
 ) : PathEngine, NetworkMonitor.Listener {
     companion object {
         private const val HEARTBEAT_INTERVAL_MS = 30_000L
@@ -140,9 +140,10 @@ internal class PathHttpEngine(
         isJobExecutionRunning = true
     }
 
-    override fun toggle() {
+    override fun toggleJobExecution(): Boolean {
         isJobExecutionRunning = !isJobExecutionRunning
         Timber.d("HTTP: changed status to [$isJobExecutionRunning]")
+        return isJobExecutionRunning
     }
 
     override fun addListener(l: PathEngine.Listener) = listeners.add(l)
@@ -251,13 +252,14 @@ internal class PathHttpEngine(
                 Timber.d("HTTP: network info [$networkInfo], setting [${storage.wifiSetting}], requestJobs = $requestJobs")
             }
         }
-        val jobsToRequest = if (isJobExecutionRunning && requestJobs) max(MAX_JOBS - currentExecutionUuids.size, 0) else 0
+        val jobsToRequest =
+            if (isJobExecutionRunning && requestJobs) max(MAX_JOBS - currentExecutionUuids.size, 0) else 0
         return CheckIn(
-                nodeId = storage.nodeId,
-                wallet = storage.walletAddress,
-                lat = location?.latitude?.toString() ?: "0.0",
-                lon = location?.longitude?.toString() ?: "0.0",
-                returnJobsMax = jobsToRequest
+            nodeId = storage.nodeId,
+            wallet = storage.walletAddress,
+            lat = location?.latitude?.toString() ?: "0.0",
+            lon = location?.longitude?.toString() ?: "0.0",
+            returnJobsMax = jobsToRequest
         )
     }
 
@@ -325,12 +327,12 @@ internal class PathHttpEngine(
 
             val libs = context.applicationInfo.nativeLibraryDir
             val obfsCmd = mutableListOf(
-                    File(libs, Executable.SIMPLE_OBFS).absolutePath,
-                    "-s", host,
-                    "-p", PROXY_PORT.toString(),
-                    "-l", Constants.SIMPLE_OBFS_PORT.toString(),
-                    "-t", TIMEOUT.toString(),
-                    "--obfs", "http"
+                File(libs, Executable.SIMPLE_OBFS).absolutePath,
+                "-s", host,
+                "-p", PROXY_PORT.toString(),
+                "-l", Constants.SIMPLE_OBFS_PORT.toString(),
+                "-t", TIMEOUT.toString(),
+                "--obfs", "http"
             )
             if (BuildConfig.DEBUG) {
                 obfsCmd.add("-v")
@@ -338,15 +340,15 @@ internal class PathHttpEngine(
             simpleObfs.start(obfsCmd)
 
             val cmd = mutableListOf(
-                    File(libs, Executable.SS_LOCAL).absolutePath,
-                    "-u",
-                    "-s", Constants.LOCALHOST,
-                    "-p", Constants.SIMPLE_OBFS_PORT.toString(),
-                    "-k", PROXY_PASSWORD,
-                    "-m", PROXY_ENCRYPTION_METHOD,
-                    "-b", Constants.LOCALHOST,
-                    "-l", Constants.SS_LOCAL_PORT.toString(),
-                    "-t", TIMEOUT.toString()
+                File(libs, Executable.SS_LOCAL).absolutePath,
+                "-u",
+                "-s", Constants.LOCALHOST,
+                "-p", Constants.SIMPLE_OBFS_PORT.toString(),
+                "-k", PROXY_PASSWORD,
+                "-m", PROXY_ENCRYPTION_METHOD,
+                "-b", Constants.LOCALHOST,
+                "-l", Constants.SS_LOCAL_PORT.toString(),
+                "-t", TIMEOUT.toString()
             )
             if (BuildConfig.DEBUG) {
                 cmd.add("-v")
@@ -363,17 +365,24 @@ internal class PathHttpEngine(
     }
 
     private fun OkHttpClient.Builder.addProxy(host: String, port: Int): OkHttpClient.Builder =
-            proxy(Proxy(Proxy.Type.SOCKS, InetSocketAddress.createUnresolved(host, port)))
-                    .addInterceptor { chain ->
-                        val request = chain.request()
-                        val url = request.url().newBuilder().scheme("http").build()
-                        chain.proceed(request.newBuilder().url(url).build())
-                    }
+        proxy(Proxy(Proxy.Type.SOCKS, InetSocketAddress.createUnresolved(host, port)))
+            .addInterceptor { chain ->
+                val request = chain.request()
+                val url = request.url().newBuilder().scheme("http").build()
+                chain.proceed(request.newBuilder().url(url).build())
+            }
 
     private fun test() {
 //        val dummyRequest = JobRequest(protocol = "tcp", payload = "HELO\n", endpointAddress = "smtp.gmail.com", endpointPort = 587, jobUuid = "DUMMY_UUID", executionUuid = "DUMMY_UUID")
 //        val dummyRequest = JobRequest(protocol = "tcp", payload = "GET /\n\n", endpointAddress = "www.google.com", endpointPort = 80, jobUuid = "DUMMY_UUID", executionUuid = "DUMMY_UUID")
-        val dummyRequest = JobRequest(protocol = "", method = "traceroute", payload = "HELLO", endpointAddress = "www.google.com", jobUuid = "DUMMY_UUID", executionUuid = "DUMMY_UUID")
+        val dummyRequest = JobRequest(
+            protocol = "",
+            method = "traceroute",
+            payload = "HELLO",
+            endpointAddress = "www.google.com",
+            jobUuid = "DUMMY_UUID",
+            executionUuid = "DUMMY_UUID"
+        )
         notifyRequest(dummyRequest)
     }
 }
