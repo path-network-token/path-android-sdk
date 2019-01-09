@@ -64,7 +64,7 @@ dependencies {
     implementation "com.google.code.gson:gson:$versions.gson"
 
     // Misc
-    implementation "com.github.instacart.truetime-android:library-extension-rx:$versions.trueTime"
+    implementation "com.github.instacart.truetime-android:library:$versions.trueTime"
     implementation "com.google.android.gms:play-services-location:$versions.location"
     implementation "com.jakewharton.timber:timber:$versions.timber"
 

@@ -1,6 +1,6 @@
 package network.path.mobilenode.library.domain
 
-import com.instacart.library.truetime.TrueTimeRx
+import com.instacart.library.truetime.TrueTime
 import timber.log.Timber
 import java.net.InetAddress
 import java.util.*
@@ -15,7 +15,7 @@ internal object DomainGenerator {
 
     private fun generateDomains(): Set<String> {
         val date = try {
-            TrueTimeRx.now()
+            TrueTime.now()
         } catch (e: Exception) {
             Timber.w("TRUE TIME: now() failed: $e")
             Date()

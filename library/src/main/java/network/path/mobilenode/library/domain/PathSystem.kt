@@ -1,12 +1,9 @@
 package network.path.mobilenode.library.domain
 
-import android.annotation.SuppressLint
 import android.content.Context
 import com.google.gson.FieldNamingPolicy
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
-import com.instacart.library.truetime.TrueTimeRx
-import io.reactivex.schedulers.Schedulers
 import network.path.mobilenode.library.BuildConfig
 import network.path.mobilenode.library.Constants
 import network.path.mobilenode.library.data.android.LastLocationProvider
@@ -284,10 +281,6 @@ internal constructor(
         }
     }
 
-    init {
-        initTrueTime()
-    }
-
     /**
      * This method initiates connection to Path API and starts performing jobs execution.
      *
@@ -342,17 +335,6 @@ internal constructor(
             .sortedWith(
                 compareByDescending(JobTypeStatistics::count)
                     .then(compareByDescending(JobTypeStatistics::averageLatency))
-            )
-    }
-
-    @SuppressLint("CheckResult")
-    private fun initTrueTime() {
-        TrueTimeRx.build()
-            .initializeRx("time.google.com")
-            .subscribeOn(Schedulers.io())
-            .subscribe(
-                { date -> Timber.d("TRUE TIME: initialised [$date]") },
-                { throwable -> Timber.w("TRUE TIME: initialisation failed: $throwable") }
             )
     }
 }

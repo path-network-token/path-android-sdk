@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import com.google.gson.Gson
+import com.instacart.library.truetime.TrueTime
 import network.path.mobilenode.library.BuildConfig
 import network.path.mobilenode.library.Constants
 import network.path.mobilenode.library.data.android.LastLocationProvider
@@ -53,6 +54,10 @@ internal class PathHttpEngine(
         private const val PROXY_PORT = 443
         private const val PROXY_PASSWORD = "PathNetwork"
         private const val PROXY_ENCRYPTION_METHOD = "aes-256-cfb"
+    }
+
+    init {
+        initTrueTime(0L)
     }
 
     private val listeners = Collections.newSetFromMap(ConcurrentHashMap<PathEngine.Listener, Boolean>(0))
@@ -371,6 +376,22 @@ internal class PathHttpEngine(
                 val url = request.url().newBuilder().scheme("http").build()
                 chain.proceed(request.newBuilder().url(url).build())
             }
+
+    private fun initTrueTime(delay: Long) {
+        threadManager.run("TrueTime", delay) {
+            try {
+                TrueTime.build()
+                    .withLoggingEnabled(BuildConfig.DEBUG)
+                    .withNtpHost("time.google.com")
+                    .initialize()
+                Timber.d("TRUE TIME: initialised")
+            } catch (e: Exception) {
+                Timber.w("TRUE TIME: failed to initialise: $e")
+                // Retry in 1 second
+                initTrueTime(1000L)
+            }
+        }
+    }
 
     private fun test() {
 //        val dummyRequest = JobRequest(protocol = "tcp", payload = "HELO\n", endpointAddress = "smtp.gmail.com", endpointPort = 587, jobUuid = "DUMMY_UUID", executionUuid = "DUMMY_UUID")
