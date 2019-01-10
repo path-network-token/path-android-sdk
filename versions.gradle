@@ -25,5 +25,6 @@ ext.versions = [
         timber              : '4.7.1',
         trueTime            : '3.4',
 
+        junit               : '5.3.1',
         oldJunit            : '4.12',
 ]
