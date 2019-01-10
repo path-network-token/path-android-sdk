@@ -30,7 +30,6 @@ allprojects {
 ```
 
 where `${version}` corresponds to latest published version in [ ![Download](https://api.bintray.com/packages/path/path-network-android-sdk/path-network-android-sdk/images/download.svg?version=1.0.4) ](https://bintray.com/path/path-network-android-sdk/path-network-android-sdk/1.0.4/link)
-
 ## Usage
 ### Connection
 * Get reference to singleton instance of `PathSystem` in your `onCreate()` method of activity/service:
@@ -107,13 +106,23 @@ val stats = pathSystem.statistics
 ```
 
 ### Payment settings
-* To receive payment for performed jobs wallet address must be provided. Use `walletAddress` property and `hasAddress` helper method for this:
+To receive payment for performed jobs wallet address must be provided. Use `setWalletAddress` method to set wallet address that will be used to make payments for performed jobs:
 ```kotlin
-if (!pathSystem.hasAddress) {
-	pathSystem.walletAddress = "0x1234567890123456789012345678901234567890"
+if (pathSystem.setWalletAddress("0x1234567890123456789012345678901234567890")) {
+	// Wallet address was successfully changed
 }
 ```
-**Please note:** wallet address validation is user's responsibility.
+`setWalletAddress()` will return **true** if address is valid and **false** otherwise. Validity check of address is performed according to [this spec](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-55.md).
+
+You can also use static `PathSystem.isWalletAddressValid()` method (which is used internally when you call `setWalletAddress()` method) in your code, for example, to disable a button if user tries to input invalid address:
+```kotlin
+editView.onTextChanged {
+	val isValid = PathSystem.isWalletAddressValid(it)
+	buttonDone.isEnabled = isValid
+	editViewLayout.error = if (isValid) null else "Wallet address is invalid"
+}
+```
+Helper property `hasAddress` can be used to detect if address was previously set (behind the scenes it just compares current address with default value which is `0x0000000000000000000000000000000000000000`.
 
 ## Example app
 Check out example application from `example` folder for a working example of working with Path SDK.
