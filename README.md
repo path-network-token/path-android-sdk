@@ -29,7 +29,7 @@ allprojects {
 }
 ```
 
-where `${version}` corresponds to latest published version in [ ![Download](https://api.bintray.com/packages/path/path-network-android-sdk/path-network-android-sdk/images/download.svg?version=1.0.3) ](https://bintray.com/path/path-network-android-sdk/path-network-android-sdk/1.0.3/link)
+where `${version}` corresponds to latest published version in [ ![Download](https://api.bintray.com/packages/path/path-network-android-sdk/path-network-android-sdk/images/download.svg?version=1.0.4) ](https://bintray.com/path/path-network-android-sdk/path-network-android-sdk/1.0.4/link)
 
 ## Usage
 ### Connection
