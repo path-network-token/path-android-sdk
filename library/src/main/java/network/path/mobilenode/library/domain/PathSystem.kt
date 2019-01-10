@@ -17,6 +17,8 @@ import network.path.mobilenode.library.domain.entity.*
 import network.path.mobilenode.library.utils.CustomThreadPoolManager
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
+import org.web3j.crypto.Hash
+import org.web3j.utils.Numeric
 import timber.log.Timber
 import java.io.IOException
 import java.util.*
@@ -71,6 +73,38 @@ internal constructor(
                 INSTANCE = PathSystem(isTest, engine, storage, jobExecutor, networkMonitor, threadManager)
             }
             return INSTANCE!!
+        }
+
+        /**
+         * Validates wallet address.
+         *
+         * @param [address] Address to validate. It should be in form of **0x[0-9a-fA-F]{40}**
+         *
+         * @return **true** if address is valid as per https://github.com/ethereum/EIPs/blob/master/EIPS/eip-55.md spec, **false** otherwise.
+         */
+        fun isWalletAddressValid(address: CharSequence) =
+            Numeric.prependHexPrefix(address.toString()) == checkedAddress(address)
+
+        private fun checkedAddress(address: CharSequence): String {
+            val cleanAddress = Numeric.cleanHexPrefix(address.toString()).toLowerCase()
+
+            val sb = StringBuilder()
+            val hash = Hash.sha3String(cleanAddress)
+            val hashChars = hash.substring(2).toCharArray()
+            val hashIndices = hashChars.indices
+
+            val chars = cleanAddress.toCharArray()
+            for (i in chars.indices) {
+                if (!hashIndices.contains(i)) continue
+
+                val c = if (Character.digit(hashChars[i], 16) and 0xFF > 7) {
+                    Character.toUpperCase(chars[i])
+                } else {
+                    Character.toLowerCase(chars[i])
+                }
+                sb.append(c)
+            }
+            return Numeric.prependHexPrefix(sb.toString())
         }
 
         private fun createLenientGson(): Gson = GsonBuilder()
@@ -159,7 +193,14 @@ internal constructor(
 
     private val listeners = Collections.newSetFromMap(ConcurrentHashMap<Listener, Boolean>(0))
 
+    /**
+     * Adds new listener. This operation is thread-safe.
+     */
     fun addListener(l: Listener) = listeners.add(l)
+
+    /**
+     * Removes specified listener. This operation is thread-safe.
+     */
     fun removeListener(l: Listener) = listeners.remove(l)
 
     /**
@@ -229,15 +270,26 @@ internal constructor(
      * Default value is **0x0000000000000000000000000000000000000000**.
      * Make sure you provide a valid wallet address otherwise payments will go to nowhere.
      */
-    var walletAddress: String
+    val walletAddress: String
         get() = storage.walletAddress
-        set(value) {
-            storage.walletAddress = value
-        }
+
     /**
      * @return **true** is default wallet address is currently in use, **false** otherwise.
      */
     val hasAddress: Boolean get() = storage.walletAddress != Constants.PATH_DEFAULT_WALLET_ADDRESS
+
+    /**
+     * Validates and updates wallet address used by SDK.
+     *
+     * @param [address] Address string. It should be in form of **0x[0-9a-fA-F]{40}**
+     *
+     * @return **true** if address was updated successfully, **false** if address is invalid.
+     */
+    fun setWalletAddress(address: String): Boolean =
+        if (isWalletAddressValid(address)) {
+            storage.walletAddress = address
+            true
+        } else false
 
     // Stats
     /**

@@ -36,6 +36,11 @@ android {
         targetCompatibility JavaVersion.VERSION_1_8
     }
 
+    lintOptions {
+        abortOnError false
+        lintConfig file("lint.xml")
+    }
+
     externalNativeBuild {
         ndkBuild {
             path 'src/main/jni/Android.mk'
@@ -67,6 +72,7 @@ dependencies {
     implementation "com.github.instacart.truetime-android:library:$versions.trueTime"
     implementation "com.google.android.gms:play-services-location:$versions.location"
     implementation "com.jakewharton.timber:timber:$versions.timber"
+    implementation "org.web3j:core:$versions.web3j"
 
     // Testing
     testImplementation "junit:junit:$versions.oldJunit"
