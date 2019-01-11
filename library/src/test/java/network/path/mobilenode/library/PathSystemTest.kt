@@ -1,8 +1,8 @@
 package network.path.mobilenode.library
 
-import junit.framework.Assert.assertEquals
 import network.path.mobilenode.library.domain.PathSystem
-import org.junit.Test
+import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Test
 
 class PathSystemTest {
     companion object {
@@ -13,13 +13,8 @@ class PathSystemTest {
 
     @Test
     fun testIsWalletAddressValid() {
-        assertEquals(PathSystem.isWalletAddressValid(VALID_ADDRESS), true)
-        assertEquals(PathSystem.isWalletAddressValid(DIGIT_ONLY_ADDRESS), true)
-        assertEquals(PathSystem.isWalletAddressValid(INVALID_ADDRESS), false)
-    }
-
-    @Test
-    fun testStartStop() {
-
+        Assertions.assertTrue(PathSystem.isWalletAddressValid(VALID_ADDRESS))
+        Assertions.assertTrue(PathSystem.isWalletAddressValid(DIGIT_ONLY_ADDRESS))
+        Assertions.assertFalse(PathSystem.isWalletAddressValid(INVALID_ADDRESS))
     }
 }
