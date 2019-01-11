@@ -30,10 +30,7 @@ internal fun computeJobResult(
         }
     }
 
-    val status = when (isResponseKnown) {
-        true -> calculateJobStatus(requestDurationMillis, jobRequest)
-        false -> Status.UNKNOWN
-    }
+    val status = if (isResponseKnown) calculateJobStatus(requestDurationMillis, jobRequest) else Status.UNKNOWN
 
     Timber.d("RUNNER: [$jobRequest] => $status")
     return JobResult(

@@ -22,17 +22,14 @@ class HttpRunnerTest {
     }
 
     private lateinit var runner: HttpRunner
+    private lateinit var interceptor: MockInterceptor
 
     @BeforeEach
     fun init() {
         val storage = Mockito.mock(PathStorage::class.java)
         Mockito.`when`(storage.nodeId).thenReturn(DUMMY_NODE_ID)
 
-        val interceptor = MockInterceptor()
-        interceptor.addRule()
-            .get().or().put().or().post()
-            .url(DUMMY_SUCCESS_URL)
-            .respond(RESPONSE_SUCCESS)
+        interceptor = MockInterceptor()
 
         val httpClient = OkHttpClient.Builder()
             .addInterceptor(interceptor)
@@ -42,7 +39,12 @@ class HttpRunnerTest {
     }
 
     @Test
-    fun testHttpRunnerSuccess() {
+    fun testSuccess() {
+        interceptor.addRule()
+            .get().or().put().or().post()
+            .url(DUMMY_SUCCESS_URL)
+            .respond(RESPONSE_SUCCESS)
+
         val request = JobRequest(
             protocol = "http",
             method = "get",
@@ -55,5 +57,24 @@ class HttpRunnerTest {
         Assertions.assertEquals(result.executionUuid, DUMMY_UUID)
         Assertions.assertEquals(result.responseBody, RESPONSE_SUCCESS)
         Assertions.assertNotEquals(result.status, Status.UNKNOWN)
+    }
+
+    @Test
+    fun testFailure() {
+        interceptor.addRule()
+            .get(DUMMY_FAILURE_URL)
+            .respond(401)
+
+        val request = JobRequest(
+            protocol = "http",
+            method = "get",
+            endpointAddress = DUMMY_FAILURE_URL,
+            jobUuid = DUMMY_UUID,
+            executionUuid = DUMMY_UUID
+        )
+        val result = runner.runJob(request, MockTimeSource)
+        Assertions.assertEquals(result.checkType, JobType.HTTP)
+        Assertions.assertEquals(result.executionUuid, DUMMY_UUID)
+        Assertions.assertEquals(result.status, Status.UNKNOWN)
     }
 }
