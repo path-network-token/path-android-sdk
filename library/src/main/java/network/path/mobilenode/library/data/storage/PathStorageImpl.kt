@@ -63,10 +63,10 @@ internal class PathStorageImpl(context: Context, isTest: Boolean) : PathStorage 
     private fun createPrefKey(type: JobType, key: String) = "$type$key"
 
     override fun statisticsForType(type: JobType): JobTypeStatistics {
-        val averageLatency = sharedPreferences.getLong(createPrefKey(type, CHECKS_LATENCY_KEY_SUFFIX), 0L)
+        val totalLatencyMillis = sharedPreferences.getLong(createPrefKey(type, CHECKS_LATENCY_KEY_SUFFIX), 0L)
         val count =
-            if (averageLatency < 1) 0L else sharedPreferences.getLong(createPrefKey(type, CHECKS_COUNT_KEY_SUFFIX), 0L)
-        return JobTypeStatistics(type, count, averageLatency)
+            if (totalLatencyMillis < 1) 0L else sharedPreferences.getLong(createPrefKey(type, CHECKS_COUNT_KEY_SUFFIX), 0L)
+        return JobTypeStatistics(type, count, totalLatencyMillis)
     }
 
     override fun recordStatistics(type: JobType, elapsed: Long): JobTypeStatistics {

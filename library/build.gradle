@@ -80,6 +80,9 @@ dependencies {
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$versions.junit"
     testRuntimeOnly "org.junit.vintage:junit-vintage-engine:$versions.junit"
     testImplementation "org.junit.jupiter:junit-jupiter-params:$versions.junit"
+    testImplementation "org.mockito:mockito-core:$versions.mockito"
+    testImplementation "org.mockito:mockito-inline:$versions.mockito"
+    testImplementation "com.nhaarman:mockito-kotlin:$versions.mockitoKotlin"
 }
 
 repositories {
