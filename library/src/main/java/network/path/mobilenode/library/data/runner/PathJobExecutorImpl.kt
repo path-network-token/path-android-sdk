@@ -11,30 +11,33 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
 
-internal class PathJobExecutorImpl(private val okHttpClient: OkHttpClient,
-                                   private val storage: PathStorage,
-                                   private val gson: Gson) : PathJobExecutor {
+internal class PathJobExecutorImpl(
+    private val okHttpClient: OkHttpClient,
+    private val storage: PathStorage,
+    private val gson: Gson,
+    private val timeSource: TimeSource
+) : PathJobExecutor {
     private lateinit var executor: ExecutorService
 
     override fun start() {
         executor = Executors.newCachedThreadPool()
     }
 
-    override fun execute(request: JobRequest): Future<JobResult> {
-        val runner = with(request) {
-            when {
-                protocol == null -> FallbackRunner
-                protocol.startsWith(prefix = "http", ignoreCase = true) -> HttpRunner(okHttpClient, storage)
-                protocol.startsWith(prefix = "tcp", ignoreCase = true) -> TcpRunner()
-                protocol.startsWith(prefix = "udp", ignoreCase = true) -> UdpRunner()
-                method.orEmpty().startsWith(prefix = "traceroute", ignoreCase = true) -> TraceRunner(gson)
-                else -> FallbackRunner
-            }
-        }
-        return executor.submit(Callable { runner.runJob(request) })
-    }
+    override fun execute(request: JobRequest): Future<JobResult> =
+        executor.submit(Callable {
+            request.findRunner().runJob(request, timeSource)
+        })
 
     override fun stop() {
         executor.shutdown()
+    }
+
+    private fun JobRequest.findRunner(): Runner = when {
+        protocol == null -> FallbackRunner
+        protocol.startsWith(prefix = "http", ignoreCase = true) -> HttpRunner(okHttpClient, storage)
+        protocol.startsWith(prefix = "tcp", ignoreCase = true) -> TcpRunner()
+        protocol.startsWith(prefix = "udp", ignoreCase = true) -> UdpRunner()
+        method.orEmpty().startsWith(prefix = "traceroute", ignoreCase = true) -> TraceRunner(gson)
+        else -> FallbackRunner
     }
 }

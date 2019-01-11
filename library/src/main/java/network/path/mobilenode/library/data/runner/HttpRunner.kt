@@ -3,8 +3,8 @@ package network.path.mobilenode.library.data.runner
 import network.path.mobilenode.library.BuildConfig
 import network.path.mobilenode.library.Constants
 import network.path.mobilenode.library.domain.PathStorage
-import network.path.mobilenode.library.domain.entity.JobType
 import network.path.mobilenode.library.domain.entity.JobRequest
+import network.path.mobilenode.library.domain.entity.JobType
 import network.path.mobilenode.library.utils.getBody
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
@@ -18,7 +18,8 @@ internal class HttpRunner(private val okHttpClient: OkHttpClient, private val st
 
     override val jobType = JobType.HTTP
 
-    override fun runJob(jobRequest: JobRequest) = computeJobResult(jobType, jobRequest) { runHttpJob(it) }
+    override fun runJob(jobRequest: JobRequest, timeSource: TimeSource) =
+        computeJobResult(jobType, jobRequest, timeSource) { runHttpJob(it) }
 
     private fun runHttpJob(jobRequest: JobRequest): String {
         val request = buildRequest(jobRequest)
@@ -37,7 +38,7 @@ internal class HttpRunner(private val okHttpClient: OkHttpClient, private val st
             }
 
             val urlPrefix = HttpUrl.parse("$prependedProtocol$endpointAddress")
-                    ?: throw IOException("Unparsable url: $endpointAddress")
+                ?: throw IOException("Unparsable url: $endpointAddress")
             val urlPrefixWithPortBuilder = urlPrefix.newBuilder()
             if (endpointPort != null && Constants.TCP_UDP_PORT_RANGE.contains(endpointPort)) {
                 urlPrefixWithPortBuilder.port(endpointPort)
@@ -48,8 +49,8 @@ internal class HttpRunner(private val okHttpClient: OkHttpClient, private val st
 
         val method = jobRequest.method ?: "GET"
         val requestBuilder = Request.Builder()
-                .method(method, null)
-                .url(completeUrl)
+            .method(method, null)
+            .url(completeUrl)
 
         var hasUserAgent = false
         jobRequest.headers?.flatMap { it.entries }?.forEach { entry ->
@@ -61,7 +62,8 @@ internal class HttpRunner(private val okHttpClient: OkHttpClient, private val st
 
         if (!hasUserAgent) {
             val nodeId = storage.nodeId
-            val ua = "Mozilla/5.0 (Path Network ${Constants.PATH_API_VERSION}; Android; ${System.getProperty("os.arch")}) ${BuildConfig.VERSION_NAME}/${BuildConfig.VERSION_CODE} (KHTML, like Gecko) Node/$nodeId"
+            val ua =
+                "Mozilla/5.0 (Path Network ${Constants.PATH_API_VERSION}; Android; ${System.getProperty("os.arch")}) ${BuildConfig.VERSION_NAME}/${BuildConfig.VERSION_CODE} (KHTML, like Gecko) Node/$nodeId"
             requestBuilder.addHeader("User-Agent", ua)
         }
 

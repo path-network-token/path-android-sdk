@@ -29,4 +29,5 @@ ext.versions = [
         oldJunit            : '4.12',
         mockito             : '2.22.0',
         mockitoKotlin       : '1.6.0',
+        mockHttp            : '1.2.1',
 ]

@@ -83,6 +83,7 @@ dependencies {
     testImplementation "org.mockito:mockito-core:$versions.mockito"
     testImplementation "org.mockito:mockito-inline:$versions.mockito"
     testImplementation "com.nhaarman:mockito-kotlin:$versions.mockitoKotlin"
+    testImplementation "com.github.gmazzo:okhttp-mock:$versions.mockHttp"
 }
 
 repositories {

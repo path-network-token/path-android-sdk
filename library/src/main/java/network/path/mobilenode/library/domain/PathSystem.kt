@@ -11,6 +11,7 @@ import network.path.mobilenode.library.data.android.NetworkMonitor
 import network.path.mobilenode.library.data.http.CustomDns
 import network.path.mobilenode.library.data.http.PathHttpEngine
 import network.path.mobilenode.library.data.runner.PathJobExecutorImpl
+import network.path.mobilenode.library.data.runner.TimeClock
 import network.path.mobilenode.library.data.storage.PathStorageImpl
 import network.path.mobilenode.library.domain.PathSystem.Companion.create
 import network.path.mobilenode.library.domain.entity.*
@@ -69,7 +70,7 @@ internal constructor(
                     threadManager,
                     isTest
                 )
-                val jobExecutor = PathJobExecutorImpl(okHttpClient, storage, gson)
+                val jobExecutor = PathJobExecutorImpl(okHttpClient, storage, gson, TimeClock)
                 INSTANCE = PathSystem(isTest, engine, storage, jobExecutor, networkMonitor, threadManager)
             }
             return INSTANCE!!

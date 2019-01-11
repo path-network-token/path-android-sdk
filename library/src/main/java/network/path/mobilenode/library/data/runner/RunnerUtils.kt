@@ -1,21 +1,25 @@
 package network.path.mobilenode.library.data.runner
 
-import android.os.SystemClock
 import network.path.mobilenode.library.Constants
-import network.path.mobilenode.library.domain.entity.JobType
 import network.path.mobilenode.library.domain.entity.JobRequest
 import network.path.mobilenode.library.domain.entity.JobResult
+import network.path.mobilenode.library.domain.entity.JobType
 import timber.log.Timber
 import java.io.IOException
 import java.util.concurrent.Callable
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
-internal fun computeJobResult(jobType: JobType, jobRequest: JobRequest, block: (JobRequest) -> String): JobResult {
+internal fun computeJobResult(
+    jobType: JobType,
+    jobRequest: JobRequest,
+    timeSource: TimeSource,
+    block: (JobRequest) -> String
+): JobResult {
     var responseBody = ""
     var isResponseKnown = false
 
-    val requestDurationMillis = measureRealtimeMillis {
+    val requestDurationMillis = timeSource.measure {
         try {
             responseBody = block(jobRequest)
             isResponseKnown = true
@@ -45,12 +49,6 @@ internal inline fun <T> runWithTimeout(timeout: Long, crossinline block: () -> T
     val executor = Executors.newSingleThreadExecutor()
     val f = executor.submit(Callable { block() })
     return f.get(timeout, TimeUnit.MILLISECONDS)
-}
-
-internal inline fun measureRealtimeMillis(block: () -> Unit): Long {
-    val start = SystemClock.elapsedRealtime()
-    block()
-    return SystemClock.elapsedRealtime() - start
 }
 
 internal fun calculateJobStatus(requestDurationMillis: Long, jobRequest: JobRequest): String {
