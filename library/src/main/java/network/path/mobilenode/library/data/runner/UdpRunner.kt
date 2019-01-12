@@ -20,9 +20,8 @@ internal class UdpRunner : Runner {
         }
 
     private fun runUdpJob(jobRequest: JobRequest): String {
-        val port = jobRequest.endpointPortOrDefault(Constants.DEFAULT_UDP_PORT)
-
         DatagramSocket().use {
+            val port = jobRequest.endpointPortOrDefault(Constants.DEFAULT_UDP_PORT)
             val socketAddress = InetAddress.getByName(jobRequest.endpointHost)
             val body = jobRequest.payload.orEmpty()
 

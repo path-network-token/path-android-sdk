@@ -26,19 +26,22 @@ internal class PathJobExecutorImpl(
 
     override fun execute(request: JobRequest): Future<JobResult> =
         executor.submit(Callable {
-            request.findRunner().runJob(request, timeSource)
+            findRunner(request).runJob(request, timeSource)
         })
 
     override fun stop() {
         executor.shutdown()
     }
 
-    private fun JobRequest.findRunner(): Runner = when {
-        protocol == null -> FallbackRunner
-        protocol.startsWith(prefix = "http", ignoreCase = true) -> HttpRunner(okHttpClient, storage)
-        protocol.startsWith(prefix = "tcp", ignoreCase = true) -> TcpRunner(SocketFactory.getDefault())
-        protocol.startsWith(prefix = "udp", ignoreCase = true) -> UdpRunner()
-        method.orEmpty().startsWith(prefix = "traceroute", ignoreCase = true) -> TraceRunner(gson)
-        else -> FallbackRunner
+    @Suppress("MemberVisibilityCanBePrivate")
+    internal fun findRunner(request: JobRequest): Runner = with(request) {
+        when {
+            protocol == null -> FallbackRunner
+            protocol.startsWith(prefix = "http", ignoreCase = true) -> HttpRunner(okHttpClient, storage)
+            protocol.startsWith(prefix = "tcp", ignoreCase = true) -> TcpRunner(SocketFactory.getDefault())
+            protocol.startsWith(prefix = "udp", ignoreCase = true) -> UdpRunner()
+            method.orEmpty().startsWith(prefix = "traceroute", ignoreCase = true) -> TraceRunner(gson)
+            else -> FallbackRunner
+        }
     }
 }
