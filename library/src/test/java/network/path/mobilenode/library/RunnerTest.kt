@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test
 
 class RunnerTest {
     companion object {
-        private const val DUMMY_UUID = "DUMMY_UUID"
+        const val DUMMY_UUID = "DUMMY_UUID"
     }
 
     @Test

@@ -10,7 +10,7 @@ import network.path.mobilenode.library.utils.writeText
 import java.net.InetSocketAddress
 import javax.net.SocketFactory
 
-internal class TcpRunner : Runner {
+internal class TcpRunner(private val factory: SocketFactory) : Runner {
     override val jobType = JobType.TCP
 
     override fun runJob(jobRequest: JobRequest, timeSource: TimeSource) =
@@ -21,7 +21,7 @@ internal class TcpRunner : Runner {
         }
 
     private fun runTcpJob(jobRequest: JobRequest): String =
-        SocketFactory.getDefault().createSocket().use {
+        factory.createSocket().use {
             val port = jobRequest.endpointPortOrDefault(Constants.DEFAULT_TCP_PORT)
             val address = InetSocketAddress(jobRequest.endpointHost, port)
 

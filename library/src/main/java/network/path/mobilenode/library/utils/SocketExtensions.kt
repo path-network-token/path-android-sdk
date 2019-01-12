@@ -7,15 +7,14 @@ import java.io.IOException
 import java.net.ServerSocket
 import java.net.Socket
 
-internal fun Socket.readText(maxSize: Int): String {
+internal fun Socket.readText(maxSize: Int): String =
     ByteArrayOutputStream(maxSize).use {
         getInputStream().copyTo(it)
         return String(it.toByteArray())
     }
-}
 
 internal fun Socket.writeText(payload: String) {
-    this.getOutputStream().bufferedWriter().apply {
+    getOutputStream().bufferedWriter().apply {
         write(payload)
         flush()
     }

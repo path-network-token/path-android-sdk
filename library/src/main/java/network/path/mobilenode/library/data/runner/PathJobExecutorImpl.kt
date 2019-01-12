@@ -10,6 +10,7 @@ import java.util.concurrent.Callable
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
+import javax.net.SocketFactory
 
 internal class PathJobExecutorImpl(
     private val okHttpClient: OkHttpClient,
@@ -35,7 +36,7 @@ internal class PathJobExecutorImpl(
     private fun JobRequest.findRunner(): Runner = when {
         protocol == null -> FallbackRunner
         protocol.startsWith(prefix = "http", ignoreCase = true) -> HttpRunner(okHttpClient, storage)
-        protocol.startsWith(prefix = "tcp", ignoreCase = true) -> TcpRunner()
+        protocol.startsWith(prefix = "tcp", ignoreCase = true) -> TcpRunner(SocketFactory.getDefault())
         protocol.startsWith(prefix = "udp", ignoreCase = true) -> UdpRunner()
         method.orEmpty().startsWith(prefix = "traceroute", ignoreCase = true) -> TraceRunner(gson)
         else -> FallbackRunner
