@@ -4,6 +4,7 @@ import network.path.mobilenode.library.data.runner.HttpRunner
 import network.path.mobilenode.library.data.runner.Status
 import network.path.mobilenode.library.domain.PathStorage
 import network.path.mobilenode.library.domain.entity.JobRequest
+import network.path.mobilenode.library.domain.entity.JobResult
 import network.path.mobilenode.library.domain.entity.JobType
 import okhttp3.OkHttpClient
 import okhttp3.mock.MockInterceptor
@@ -59,8 +60,10 @@ class HttpRunnerTest {
         Assertions.assertNotEquals(result.status, Status.UNKNOWN)
     }
 
+    // We should consider a different way of reporting exception during job execution.
+    // Probably ERROR status plus extra field with exception text.
     @Test
-    fun testFailure() {
+    fun testHttpFailure() {
         interceptor.addRule()
             .get(DUMMY_FAILURE_URL)
             .respond(401)
@@ -73,6 +76,27 @@ class HttpRunnerTest {
             executionUuid = DUMMY_UUID
         )
         val result = runner.runJob(request, MockTimeSource)
+        testFailure(result)
+    }
+
+    @Test
+    fun testBadEndpoint() {
+        interceptor.addRule()
+            .get()
+            .url(DUMMY_SUCCESS_URL)
+            .respond(RESPONSE_SUCCESS)
+
+        val request = JobRequest(
+            protocol = "http",
+            method = "get",
+            jobUuid = DUMMY_UUID,
+            executionUuid = DUMMY_UUID
+        )
+        val result = runner.runJob(request, MockTimeSource)
+        testFailure(result)
+    }
+
+    private fun testFailure(result: JobResult) {
         Assertions.assertEquals(result.checkType, JobType.HTTP)
         Assertions.assertEquals(result.executionUuid, DUMMY_UUID)
         Assertions.assertEquals(result.status, Status.UNKNOWN)
