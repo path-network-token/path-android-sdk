@@ -4,6 +4,9 @@ apply plugin: 'kotlin-android-extensions'
 
 final def ver = rootProject.ext.versions
 
+final def properties = new Properties()
+properties.load(project.rootProject.file('local.properties').newDataInputStream())
+
 android {
     compileSdkVersion ver.compileSdk
     defaultConfig {
@@ -17,33 +20,38 @@ android {
 
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
+    signingConfigs {
+        release {
+            storeFile file(properties.getProperty('keystore.path'))
+            storePassword properties.getProperty('keystore.password')
+            keyAlias properties.getProperty('keyalias.name')
+            keyPassword properties.getProperty('keyalias.password')
+        }
+    }
     buildTypes {
         release {
-            minifyEnabled false
+            signingConfig signingConfigs.release
+            minifyEnabled true
+            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
 }
 
 dependencies {
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation project(":library")
-
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation project(':library')
     // AndroidX
     implementation "androidx.appcompat:appcompat:$versions.androidX"
     implementation "androidx.constraintlayout:constraintlayout:$versions.constraintLayout"
     implementation "androidx.lifecycle:lifecycle-extensions:$versions.lifecycle"
-
     implementation "androidx.core:core-ktx:$versions.androidCoreKtx"
     implementation "androidx.fragment:fragment-ktx:$versions.androidFragmentKtx"
     implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:$versions.lifecycle"
     kapt "androidx.lifecycle:lifecycle-compiler:$versions.lifecycle"
-
     // Kotlin
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$versions.kotlin"
-
     implementation "com.jakewharton.timber:timber:$versions.timber"
-
     // Testing
     testImplementation "junit:junit:$versions.oldJunit"
     androidTestImplementation 'com.android.support.test:runner:1.0.2'

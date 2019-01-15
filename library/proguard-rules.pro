@@ -21,6 +21,7 @@
 #-renamesourcefileattribute SourceFile
 
 -keepclasseswithmembers class network.path.mobilenode.library.domain.entity.** { *; }
+-keepclasseswithmembers class network.path.mobilenode.library.data.runner.mtr.** { *; }
 
 -dontwarn network.path.mobilenode.library.utils.**
 

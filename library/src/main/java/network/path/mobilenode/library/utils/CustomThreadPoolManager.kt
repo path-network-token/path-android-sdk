@@ -39,7 +39,8 @@ internal class CustomThreadPoolManager {
 
             // A exception handler is created to log the exception from threads
             thread.uncaughtExceptionHandler = Thread.UncaughtExceptionHandler { th, ex ->
-                Timber.e("${th.name} encountered an error: ${ex.message}")
+                Timber.e("PATH: [${th.name}] encountered an error: ${ex.message}")
+                Timber.e(ex)
             }
             return thread
         }

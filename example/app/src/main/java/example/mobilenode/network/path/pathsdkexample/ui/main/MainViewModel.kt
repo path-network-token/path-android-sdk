@@ -65,6 +65,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
         if (pathSystem.autoStart && !pathSystem.isStarted) {
             pathSystem.start()
+            if (!pathSystem.hasAddress) {
+                pathSystem.setWalletAddress("0xe9A3245A1368a5b006A6b5C7b35Ab016A085B065")
+            }
         }
     }
 

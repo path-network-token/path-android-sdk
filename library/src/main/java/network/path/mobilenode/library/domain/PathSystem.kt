@@ -310,11 +310,16 @@ internal constructor(
         override fun onRequestReceived(request: JobRequest) {
             threadManager.run {
                 Timber.d("SYSTEM: received [$request]")
-                val result = jobExecutor.execute(request).get()
-                storage.recordStatistics(result.checkType, result.responseTime)
-                engine.processResult(result)
-                updateStatistics()
-                Timber.d("SYSTEM: request result [$result]")
+                try {
+                    val result = jobExecutor.execute(request).get()
+                    storage.recordStatistics(result.checkType, result.responseTime)
+                    engine.processResult(result)
+                    updateStatistics()
+                    Timber.d("SYSTEM: request result [$result]")
+                } catch (e: Exception) {
+                    Timber.e("SYSTEM: job exception [${e.message}]")
+                    Timber.e(e)
+                }
             }
         }
 
