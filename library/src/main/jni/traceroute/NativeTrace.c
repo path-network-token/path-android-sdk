@@ -10,7 +10,7 @@
 #define JNI_REG_CLASS JNI_PACKAGE "Mtr"
 #define JNI_RESULT_CLASS JNI_PACKAGE "MtrResult"
 
-JNIEXPORT jobjectArray JNICALL native_trace(JNIEnv *env, jclass clazz, jstring server, jint port) {
+JNIEXPORT jobjectArray JNICALL native_trace(JNIEnv *env, jclass clazz, jstring server, jint port, jboolean resolve) {
     jobjectArray array = NULL;
     char **argv = NULL;
     int argc = 3;
@@ -21,9 +21,14 @@ JNIEXPORT jobjectArray JNICALL native_trace(JNIEnv *env, jclass clazz, jstring s
         goto complete;
     }
 
+    __android_log_print(ANDROID_LOG_INFO, LOG_TAG, "MTR: %s, %d, %d", c_str, port, resolve);
+
+    if (resolve == JNI_FALSE) {
+        argc += 1;
+    }
     // after using it, remember to release the memory
     if (port != 0) {
-        argc = 5;
+        argc += 2;
     }
     argv = malloc(argc * sizeof(char *));
     if (argv == NULL) {
@@ -38,6 +43,9 @@ JNIEXPORT jobjectArray JNICALL native_trace(JNIEnv *env, jclass clazz, jstring s
     int argi = 0;
     strcpy(argv[argi++], "traceroute");
     strcpy(argv[argi++], "-4");
+    if (resolve == JNI_FALSE) {
+        strcpy(argv[argi++], "-n");
+    }
     strcpy(argv[argi++], c_str);
     if (port != 0) {
         strcpy(argv[argi++], "-p");
@@ -117,7 +125,7 @@ JNIEXPORT jobjectArray JNICALL native_trace(JNIEnv *env, jclass clazz, jstring s
 
 
 static JNINativeMethod gMethods[] = {
-        {"trace", "(Ljava/lang/String;I)[L" JNI_RESULT_CLASS ";", (void *) native_trace},
+        {"trace", "(Ljava/lang/String;IZ)[L" JNI_RESULT_CLASS ";", (void *) native_trace},
 };
 
 static int registerNativeMethods(JNIEnv *env, const char *className, JNINativeMethod *gMethods,

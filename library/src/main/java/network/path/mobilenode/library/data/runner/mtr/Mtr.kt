@@ -12,5 +12,5 @@ internal class MtrResult(
 )
 
 internal class Mtr {
-    external fun trace(server: String, port: Int): Array<MtrResult?>?
+    external fun trace(server: String, port: Int, resolve: Boolean): Array<MtrResult?>?
 }

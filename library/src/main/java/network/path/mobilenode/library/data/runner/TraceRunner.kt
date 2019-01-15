@@ -25,7 +25,7 @@ internal class TraceRunner(private val gson: Gson) : Runner {
 
     private fun runTraceJob(jobRequest: JobRequest): String {
         val port = jobRequest.endpointPort ?: 0
-        val res = Mtr().trace(jobRequest.endpointHost, port)
+        val res = Mtr().trace(jobRequest.endpointHost, port, false)
         return if (res != null) gson.toJson(res.filter { it != null && it.ttl != 0 }) else ""
     }
 }
