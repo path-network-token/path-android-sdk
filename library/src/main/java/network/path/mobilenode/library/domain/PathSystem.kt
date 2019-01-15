@@ -82,9 +82,16 @@ internal constructor(
          * @param [address] Address to validate. It should be in form of **0x[0-9a-fA-F]{40}**
          *
          * @return **true** if address is valid as per https://github.com/ethereum/EIPs/blob/master/EIPS/eip-55.md spec, **false** otherwise.
+         *
+         * NOTE: If all letters are lowercase or uppercase we consider address valid anyway to simplify life of users.
          */
-        fun isWalletAddressValid(address: CharSequence) =
-            Numeric.prependHexPrefix(address.toString()) == checkedAddress(address)
+        fun isWalletAddressValid(address: CharSequence): Boolean {
+            val s = address.toString()
+            // If all letters are lowercase or uppercase, consider address valid.
+            if (s.toLowerCase() == s) return true
+            if (s.toUpperCase() == s) return true
+            return Numeric.prependHexPrefix(s) == checkedAddress(address)
+        }
 
         private fun checkedAddress(address: CharSequence): String {
             val cleanAddress = Numeric.cleanHexPrefix(address.toString()).toLowerCase()

@@ -10,6 +10,7 @@ import timber.log.Timber
 
 internal class LastLocationProvider(context: Context) : LocationCallback() {
     private val fusedLocationProvider = LocationServices.getFusedLocationProviderClient(context)
+    private var lastLocation: Location? = null
 
     fun start() {
         val request = LocationRequest.create()
@@ -30,18 +31,21 @@ internal class LastLocationProvider(context: Context) : LocationCallback() {
     fun location(): Location? = try {
         fusedLocationProvider.flushLocations()
         val task = fusedLocationProvider.lastLocation
-        if (!task.isComplete) null else {
+        val foundLocation = if (!task.isComplete) lastLocation else {
             val location = task.result
-            Timber.d("LOCATION: $location, mocked: ${location?.isFromMockProvider}")
+            Timber.d("LOCATION: from provider [$location], mocked: ${location?.isFromMockProvider}")
 
             if (location?.isFromMockProvider == true) null else location
         }
+        Timber.d("LOCATION: found location [$foundLocation]")
+        foundLocation
     } catch (e: SecurityException) {
         Timber.w("LOCATION: security exception: $e")
         null
     }
 
     override fun onLocationResult(result: LocationResult?) {
+        lastLocation = result?.lastLocation
         Timber.d("LOCATION: updated location: ${result?.lastLocation}")
     }
 }
