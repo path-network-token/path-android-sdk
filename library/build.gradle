@@ -84,6 +84,7 @@ dependencies {
     testImplementation "org.mockito:mockito-inline:$versions.mockito"
     testImplementation "com.nhaarman:mockito-kotlin:$versions.mockitoKotlin"
     testImplementation "com.github.gmazzo:okhttp-mock:$versions.mockHttp"
+    testImplementation "net.jodah:concurrentunit:$versions.concurrentUnit"
 }
 
 repositories {

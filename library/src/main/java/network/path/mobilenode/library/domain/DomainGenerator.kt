@@ -17,7 +17,7 @@ internal object DomainGenerator {
         val date = try {
             TrueTime.now()
         } catch (e: Exception) {
-            Timber.w("TRUE TIME: now() failed: $e")
+            Timber.w(e, "TRUE TIME: now() failed: $e")
             Date()
         }
         val cal = Calendar.getInstance()

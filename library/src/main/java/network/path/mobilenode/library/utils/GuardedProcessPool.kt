@@ -80,12 +80,12 @@ internal class GuardedProcessPool {
                     process.waitFor()
 
                     if (SystemClock.elapsedRealtime() - startTime < 1000) {
-                        Timber.w("PROCESS: exit too fast, stop guard: $cmdName")
+                        Timber.w("PROCESS: exit too fast, stop guard [$cmdName]")
                         break
                     }
                 }
             } catch (_: InterruptedException) {
-                Timber.d("PROCESS: interrupted, destroy process: $cmdName")
+                Timber.d("PROCESS: interrupted, destroy process [$cmdName]")
             } catch (e: IOException) {
                 pushException(e)
             } finally {

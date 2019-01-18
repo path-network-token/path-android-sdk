@@ -9,19 +9,16 @@ import network.path.mobilenode.library.BuildConfig
 import network.path.mobilenode.library.Constants
 import network.path.mobilenode.library.data.android.LastLocationProvider
 import network.path.mobilenode.library.data.android.NetworkMonitor
-import network.path.mobilenode.library.domain.DomainGenerator
 import network.path.mobilenode.library.domain.PathEngine
+import network.path.mobilenode.library.domain.PathNativeProcesses
 import network.path.mobilenode.library.domain.PathStorage
 import network.path.mobilenode.library.domain.entity.*
 import network.path.mobilenode.library.utils.CustomThreadPoolManager
-import network.path.mobilenode.library.utils.Executable
-import network.path.mobilenode.library.utils.GuardedProcessPool
 import network.path.mobilenode.library.utils.isPortInUse
 import okhttp3.OkHttpClient
 import retrofit2.Call
 import retrofit2.HttpException
 import timber.log.Timber
-import java.io.File
 import java.net.InetSocketAddress
 import java.net.Proxy
 import java.net.UnknownHostException
@@ -31,7 +28,7 @@ import java.util.concurrent.Future
 import kotlin.math.max
 
 internal class PathHttpEngine(
-    private val context: Context,
+    private val nativeProcesses: PathNativeProcesses,
     private val lastLocationProvider: LastLocationProvider,
     private val networkMonitor: NetworkMonitor,
     private val okHttpClient: OkHttpClient,
@@ -43,17 +40,34 @@ internal class PathHttpEngine(
     companion object {
         private const val HEARTBEAT_INTERVAL_MS = 30_000L
         private const val HEARTBEAT_INTERVAL_ERROR_MS = 5_000L
-        private const val POLL_INTERVAL_MS = 9_000L
 
         private const val MAX_JOBS = 10
         private const val MAX_RETRIES = 5
 
-        private const val TIMEOUT = 600
         private const val PROXY_RESTART_TIMEOUT = 3_600_000L // 1 hour
 
-        private const val PROXY_PORT = 443
-        private const val PROXY_PASSWORD = "PathNetwork"
-        private const val PROXY_ENCRYPTION_METHOD = "aes-256-cfb"
+        fun create(
+            context: Context,
+            threadManager: CustomThreadPoolManager,
+            okHttpClient: OkHttpClient,
+            storage: PathStorage,
+            gson: Gson,
+            isTest: Boolean
+        ): PathEngine {
+            val networkMonitor = NetworkMonitor(context)
+            val locationProvider = LastLocationProvider(context)
+            val nativeProcesses = PathNativeProcessesImpl(context, storage)
+            return PathHttpEngine(
+                nativeProcesses,
+                locationProvider,
+                networkMonitor,
+                okHttpClient,
+                gson,
+                storage,
+                threadManager,
+                isTest
+            )
+        }
     }
 
     init {
@@ -69,9 +83,8 @@ internal class PathHttpEngine(
     private var httpService: PathService? = null
 
     private var checkInTask: Future<*>? = null
-
-    private val ssLocal = GuardedProcessPool()
-    private val simpleObfs = GuardedProcessPool()
+    private var nativeTask: Future<*>? = null
+    private var pollTask: Future<*>? = null
 
     override var status = ConnectionStatus.LOOKING
         private set(value) {
@@ -98,12 +111,12 @@ internal class PathHttpEngine(
         }
 
     override fun start() {
-        lastLocationProvider.start()
+        networkMonitor.start()
         networkMonitor.addListener(this)
+        lastLocationProvider.start()
 
         httpService = getHttpService(false)
         performCheckIn(0L)
-        pollJobs(0L)
 
 //        kotlin.concurrent.fixedRateTimer("TEST", false, java.util.Date(), 5_000) {
 //            launch {
@@ -121,22 +134,15 @@ internal class PathHttpEngine(
             executeServiceCall {
                 httpService?.postResult(nodeId, result.executionUuid, result)
             }
-
             currentExecutionUuids.remove(result.executionUuid)
-
-            val inactiveUuids = currentExecutionUuids.filterValues { !it }
-            Timber.d("HTTP: ${currentExecutionUuids.size} jobs in the pool, ${inactiveUuids.size} jobs not yet active...")
-//        if (inactiveUuids.isEmpty()) {
-//            checkIn()
-//        }
         }
     }
 
     override fun stop() {
-        // Kill them all
-        Executable.killAll(context)
+        stopNativeProcesses()
 
         networkMonitor.removeListener(this)
+        networkMonitor.stop()
         lastLocationProvider.stop()
 
         // Reset values to defaults
@@ -166,7 +172,13 @@ internal class PathHttpEngine(
             Timber.d("HTTP: Checking in...")
             val result = executeServiceCall {
                 val checkIn = createCheckInMessage()
-                if (checkIn != null) httpService?.checkIn(storage.nodeId ?: "", checkIn) else null
+                if (checkIn != null) {
+                    httpService?.checkIn(storage.nodeId ?: "", checkIn)
+                } else {
+                    // Failed to create check-in message: location is missing
+                    retryCounter++
+                    null
+                }
             }
             if (result != null) {
                 processJobs(result)
@@ -177,8 +189,8 @@ internal class PathHttpEngine(
                 }
             }
 
-            Timber.d("HTTP: Scheduling check in...")
             val nextDelay = if (retryCounter > 0) HEARTBEAT_INTERVAL_ERROR_MS else HEARTBEAT_INTERVAL_MS
+            Timber.d("HTTP: Scheduling check-in in [$nextDelay ms]")
             performCheckIn(nextDelay)
         }
     }
@@ -195,23 +207,28 @@ internal class PathHttpEngine(
             val ids = list.jobs.map { it.executionUuid to false }
             // Add new jobs to the pool
             currentExecutionUuids.putAll(ids)
+            pollJobs(0L)
         }
 
 //        test()
     }
 
     private fun pollJobs(delay: Long) {
-        threadManager.run("pollJobs", delay) {
-            Timber.d("HTTP: Start processing jobs...")
-            if (currentExecutionUuids.isNotEmpty()) {
+        pollTask?.cancel(true)
+        pollTask = threadManager.run("pollJobs", delay) {
+            while (true) {
                 // Process only jobs which were not marked as active.
                 val ids = currentExecutionUuids.filterValues { !it }.keys.toList()
-                Timber.d("HTTP: ${ids.size} jobs to be processed")
-                ids.forEach { processJob(it) }
-            }
+                if (ids.isEmpty()) break
 
-            Timber.d("HTTP: Scheduling next jobs processing cycle...")
-            pollJobs(POLL_INTERVAL_MS)
+                // Process inactive jobs
+                Timber.d("HTTP: ${ids.size} jobs to be processed")
+                ids.forEach { uuid ->
+                    // Mark job as active
+                    currentExecutionUuids[uuid] = true
+                    processJob(uuid)
+                }
+            }
         }
     }
 
@@ -222,8 +239,6 @@ internal class PathHttpEngine(
             }
             if (details != null) {
                 details.executionUuid = executionUuid
-                // Mark job as active
-                currentExecutionUuids[executionUuid] = true
                 notifyRequest(details)
             } else {
                 currentExecutionUuids.remove(executionUuid)
@@ -239,9 +254,10 @@ internal class PathHttpEngine(
         val location = try {
             lastLocationProvider.location()
         } catch (e: Exception) {
-            Timber.w("HTTP: could not get location: $e")
-            return null
-        }
+            Timber.w(e, "HTTP: could not get location: $e")
+            null
+        } ?: return null
+
         var requestJobs = true
         if (storage.wifiSetting == WifiSetting.WIFI_ONLY) {
             // Make sure we are on WiFi if wifiOnly setting is used
@@ -262,8 +278,8 @@ internal class PathHttpEngine(
         return CheckIn(
             nodeId = storage.nodeId,
             wallet = storage.walletAddress,
-            lat = location?.latitude?.toString() ?: "0.0",
-            lon = location?.longitude?.toString() ?: "0.0",
+            lat = location.latitude.toString(),
+            lon = location.longitude.toString(),
             returnJobsMax = jobsToRequest
         )
     }
@@ -275,12 +291,13 @@ internal class PathHttpEngine(
         }
         result
     } catch (e: Exception) {
+        Timber.w(e, "HTTP: Service call exception [$e]")
         var fallback = true
         when (e) {
             is UnknownHostException -> fallback = false
             is HttpException -> if (e.code() == 422) {
                 val body = e.response().body()
-                Timber.w("HTTP exception: $body")
+                Timber.w("HTTP: exception response [$body]")
                 // TODO: Parse
                 fallback = false
             }
@@ -292,7 +309,6 @@ internal class PathHttpEngine(
                 httpService = getHttpService(!useProxy)
             }
         }
-        Timber.w("HTTP: Service call exception: $e")
         null
     }
 
@@ -324,47 +340,18 @@ internal class PathHttpEngine(
         return PathServiceImpl(client, gson, isTest)
     }
 
+    private fun stopNativeProcesses() {
+        nativeTask?.cancel(true)
+        nativeTask = null
+
+        nativeProcesses.stop()
+    }
+
     private fun startNativeProcesses() {
-        val host = DomainGenerator.findDomain(storage)
-        if (host != null) {
-            Timber.d("HTTP: found proxy domain [$host]")
-            Executable.killAll(context)
+        nativeProcesses.start()
 
-            val libs = context.applicationInfo.nativeLibraryDir
-            val obfsCmd = mutableListOf(
-                File(libs, Executable.SIMPLE_OBFS).absolutePath,
-                "-s", host,
-                "-p", PROXY_PORT.toString(),
-                "-l", Constants.SIMPLE_OBFS_PORT.toString(),
-                "-t", TIMEOUT.toString(),
-                "--obfs", "http"
-            )
-            if (BuildConfig.DEBUG) {
-                obfsCmd.add("-v")
-            }
-            simpleObfs.start(obfsCmd)
-
-            val cmd = mutableListOf(
-                File(libs, Executable.SS_LOCAL).absolutePath,
-                "-u",
-                "-s", Constants.LOCALHOST,
-                "-p", Constants.SIMPLE_OBFS_PORT.toString(),
-                "-k", PROXY_PASSWORD,
-                "-m", PROXY_ENCRYPTION_METHOD,
-                "-b", Constants.LOCALHOST,
-                "-l", Constants.SS_LOCAL_PORT.toString(),
-                "-t", TIMEOUT.toString()
-            )
-            if (BuildConfig.DEBUG) {
-                cmd.add("-v")
-            }
-
-            ssLocal.start(cmd)
-        } else {
-            Timber.w("HTTP: proxy domain not found")
-        }
-
-        threadManager.run("nativeProcesses", PROXY_RESTART_TIMEOUT) {
+        nativeTask?.cancel(true)
+        nativeTask = threadManager.run("nativeProcesses", PROXY_RESTART_TIMEOUT) {
             startNativeProcesses()
         }
     }
@@ -386,7 +373,7 @@ internal class PathHttpEngine(
                     .initialize()
                 Timber.d("TRUE TIME: initialised")
             } catch (e: Exception) {
-                Timber.w("TRUE TIME: failed to initialise: $e")
+                Timber.w(e, "TRUE TIME: failed to initialise: $e")
                 // Retry in 1 second
                 initTrueTime(1000L)
             }

@@ -3,8 +3,8 @@ ext.versions = [
         compileSdk          : 28,
         targetSdk           : 28,
 
-        libVersion          : '1.0.7',
-        libVersionCode      : 10007,
+        libVersion          : '1.0.8',
+        libVersionCode      : 10008,
 
         androidPlugin       : '3.2.1',
         googleServicesPlugin: '4.0.1',
@@ -30,4 +30,5 @@ ext.versions = [
         mockito             : '2.22.0',
         mockitoKotlin       : '1.6.0',
         mockHttp            : '1.2.1',
+        concurrentUnit      : '0.4.4',
 ]

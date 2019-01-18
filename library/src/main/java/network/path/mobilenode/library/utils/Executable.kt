@@ -51,8 +51,7 @@ internal object Executable {
                 Os.kill(process.name.toInt(), 9)    // SIGKILL
             } catch (e: ErrnoException) {
                 if (e.errno != 3) {                 // ESRCH
-                    Timber.w("SIGKILL ${exe.absolutePath} (${process.name}) failed")
-                    Timber.w(e)
+                    Timber.w(e, "SIGKILL ${exe.absolutePath} (${process.name}) failed")
                 }
             }
         }

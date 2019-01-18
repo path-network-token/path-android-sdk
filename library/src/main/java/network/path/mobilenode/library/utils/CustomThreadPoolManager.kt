@@ -16,8 +16,12 @@ internal class CustomThreadPoolManager {
     private val executorService = ScheduledThreadPoolExecutor(NUMBER_OF_CORES * 2, BackgroundThreadFactory())
 
     fun <T> run(name: CharSequence, delay: Long = 0L, callable: (() -> T?)): Future<T?>? {
-        if (executorService.isShutdown) return null
+        if (executorService.isShutdown) {
+            Timber.w("EXECUTORS: executor service has been shut down. [$name] will not be started.")
+            return null
+        }
 
+        Timber.v("EXECUTORS: starting [$name] thread with [$delay] delay.")
         return if (delay != 0L) {
             executorService.schedule(callable, delay, TimeUnit.MILLISECONDS)
         } else {
@@ -39,8 +43,7 @@ internal class CustomThreadPoolManager {
 
             // A exception handler is created to log the exception from threads
             thread.uncaughtExceptionHandler = Thread.UncaughtExceptionHandler { th, ex ->
-                Timber.e("PATH: [${th.name}] encountered an error: ${ex.message}")
-                Timber.e(ex)
+                Timber.e(ex, "EXECUTORS: [${th.name}] encountered an error: ${ex.message}")
             }
             return thread
         }

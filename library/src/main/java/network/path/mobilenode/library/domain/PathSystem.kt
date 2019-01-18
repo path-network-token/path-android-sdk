@@ -6,8 +6,6 @@ import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import network.path.mobilenode.library.BuildConfig
 import network.path.mobilenode.library.Constants
-import network.path.mobilenode.library.data.android.LastLocationProvider
-import network.path.mobilenode.library.data.android.NetworkMonitor
 import network.path.mobilenode.library.data.http.CustomDns
 import network.path.mobilenode.library.data.http.PathHttpEngine
 import network.path.mobilenode.library.data.runner.PathJobExecutorImpl
@@ -40,7 +38,6 @@ internal constructor(
     private val engine: PathEngine,
     private val storage: PathStorage,
     private val jobExecutor: PathJobExecutor,
-    private val networkMonitor: NetworkMonitor,
     private val threadManager: CustomThreadPoolManager
 ) {
     companion object {
@@ -57,21 +54,17 @@ internal constructor(
                 val gson = createLenientGson()
                 val threadManager = CustomThreadPoolManager()
                 val okHttpClient = createOkHttpClient(isTest)
-                val networkMonitor = NetworkMonitor(context)
-                val locationProvider = LastLocationProvider(context)
                 val storage = PathStorageImpl(context, isTest)
-                val engine = PathHttpEngine(
+                val engine = PathHttpEngine.create(
                     context,
-                    locationProvider,
-                    networkMonitor,
-                    okHttpClient,
-                    gson,
-                    storage,
                     threadManager,
+                    okHttpClient,
+                    storage,
+                    gson,
                     isTest
                 )
                 val jobExecutor = PathJobExecutorImpl(okHttpClient, storage, gson, TimeClock)
-                INSTANCE = PathSystem(isTest, engine, storage, jobExecutor, networkMonitor, threadManager)
+                INSTANCE = PathSystem(isTest, engine, storage, jobExecutor, threadManager)
             }
             return INSTANCE!!
         }
@@ -115,10 +108,6 @@ internal constructor(
             return Numeric.prependHexPrefix(sb.toString())
         }
 
-        private fun createLenientGson(): Gson = GsonBuilder()
-            .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
-            .create()
-
         private fun createOkHttpClient(isTest: Boolean): OkHttpClient = OkHttpClient.Builder()
             .readTimeout(Constants.JOB_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
             .writeTimeout(Constants.JOB_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
@@ -137,6 +126,9 @@ internal constructor(
             .dns(CustomDns(isTest))
             .build()
 
+        private fun createLenientGson(): Gson = GsonBuilder()
+            .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
+            .create()
     }
 
     /**
@@ -324,8 +316,7 @@ internal constructor(
                     updateStatistics()
                     Timber.d("SYSTEM: request result [$result]")
                 } catch (e: Exception) {
-                    Timber.e("SYSTEM: job exception [${e.message}]")
-                    Timber.e(e)
+                    Timber.e(e, "SYSTEM: job exception [${e.message}]")
                 }
             }
         }
@@ -356,7 +347,6 @@ internal constructor(
             if (!isStarted) {
                 isStarted = true
                 jobExecutor.start()
-                networkMonitor.start()
 
                 engine.addListener(engineListener)
                 engine.start()
@@ -387,7 +377,6 @@ internal constructor(
                 engine.stop()
                 engine.removeListener(engineListener)
 
-                networkMonitor.stop()
                 jobExecutor.stop()
             }
         }

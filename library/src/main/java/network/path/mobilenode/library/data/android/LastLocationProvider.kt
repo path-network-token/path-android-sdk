@@ -30,6 +30,7 @@ internal class LastLocationProvider(context: Context) : LocationCallback() {
 
     fun location(): Location? = try {
         fusedLocationProvider.flushLocations()
+
         val task = fusedLocationProvider.lastLocation
         val foundLocation = if (!task.isComplete) lastLocation else {
             val location = task.result
