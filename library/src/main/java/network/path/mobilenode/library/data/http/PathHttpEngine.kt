@@ -141,6 +141,10 @@ internal class PathHttpEngine(
     override fun stop() {
         stopNativeProcesses()
 
+        checkInTask?.cancel(true)
+        nativeTask?.cancel(true)
+        pollTask?.cancel(true)
+
         networkMonitor.removeListener(this)
         networkMonitor.stop()
         lastLocationProvider.stop()
