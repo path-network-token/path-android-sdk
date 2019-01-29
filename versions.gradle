@@ -3,8 +3,8 @@ ext.versions = [
         compileSdk          : 28,
         targetSdk           : 28,
 
-        libVersion          : '1.0.9',
-        libVersionCode      : 10009,
+        libVersion          : '1.0.10',
+        libVersionCode      : 10010,
 
         androidPlugin       : '3.3.0',
         googleServicesPlugin: '4.0.1',
