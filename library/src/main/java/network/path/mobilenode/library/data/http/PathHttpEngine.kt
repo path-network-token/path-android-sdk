@@ -189,7 +189,8 @@ internal class PathHttpEngine(
                 }
             }
 
-            val nextDelay = if (retryCounter > 0) HEARTBEAT_INTERVAL_ERROR_MS else HEARTBEAT_INTERVAL_MS
+            val isConnected = status == ConnectionStatus.CONNECTED || status == ConnectionStatus.PROXY
+            val nextDelay = if (retryCounter > 0 || !isConnected) HEARTBEAT_INTERVAL_ERROR_MS else HEARTBEAT_INTERVAL_MS
             Timber.d("HTTP: Scheduling check-in in [$nextDelay ms]")
             performCheckIn(nextDelay)
         }

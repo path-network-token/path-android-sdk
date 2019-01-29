@@ -6,7 +6,6 @@ import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import network.path.mobilenode.library.BuildConfig
 import network.path.mobilenode.library.Constants
-import network.path.mobilenode.library.data.http.CustomDns
 import network.path.mobilenode.library.data.http.PathHttpEngine
 import network.path.mobilenode.library.data.runner.PathJobExecutorImpl
 import network.path.mobilenode.library.data.runner.TimeClock
@@ -123,7 +122,7 @@ internal constructor(
                 level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY else HttpLoggingInterceptor.Level.NONE
 //            level = HttpLoggingInterceptor.Level.BODY
             })
-            .dns(CustomDns(isTest))
+//            .dns(CustomDns(isTest))
             .build()
 
         private fun createLenientGson(): Gson = GsonBuilder()
