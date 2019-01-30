@@ -64,6 +64,14 @@ class MainFragment : Fragment() {
         buttonToggle.setOnClickListener {
             viewModel.toggle()
         }
+
+        buttonLogs.setOnClickListener {
+            requireActivity().supportFragmentManager
+                .beginTransaction()
+                .addToBackStack(LogFragment::class.java.simpleName)
+                .replace(R.id.container, LogFragment.newInstance())
+                .commit()
+        }
     }
 
     private fun updateState(isStarted: Boolean) {

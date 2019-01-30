@@ -34,5 +34,6 @@
     <string name="label_execute_jobs_on_wi_fi_only">Execute jobs on Wi-Fi only</string>
     <string name="label_test_server">TEST SERVER</string>
     <string name="label_prod_server">PROD SERVER</string>
+    <string name="button_view_logs">View logs</string>
 
 </resources>

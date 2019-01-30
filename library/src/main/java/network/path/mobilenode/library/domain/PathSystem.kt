@@ -352,6 +352,7 @@ internal constructor(
 
                 // Initial statistics value
                 updateStatistics()
+                Timber.d("SYSTEM: started")
             }
         }
     }
@@ -377,6 +378,7 @@ internal constructor(
                 engine.removeListener(engineListener)
 
                 jobExecutor.stop()
+                Timber.d("SYSTEM: stopped")
             }
         }
     }

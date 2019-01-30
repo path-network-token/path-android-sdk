@@ -363,6 +363,16 @@
             android:text="@string/button_pause"
             app:layout_constraintTop_toTopOf="@id/buttonStatus"
             app:layout_constraintStart_toEndOf="@id/buttonStatus"
+            app:layout_constraintEnd_toStartOf="@id/buttonLogs"
+    />
+
+    <Button
+            android:id="@+id/buttonLogs"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/button_view_logs"
+            app:layout_constraintTop_toTopOf="@id/buttonStatus"
+            app:layout_constraintStart_toEndOf="@id/buttonToggle"
             app:layout_constraintEnd_toEndOf="parent"
     />
 

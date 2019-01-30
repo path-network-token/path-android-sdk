@@ -118,6 +118,8 @@ internal class PathHttpEngine(
         httpService = getHttpService(false)
         performCheckIn(0L)
 
+        Timber.d("HTTP: started")
+
 //        kotlin.concurrent.fixedRateTimer("TEST", false, java.util.Date(), 5_000) {
 //            launch {
 //                status.send(if (status.valueOrNull == ConnectionStatus.CONNECTED) ConnectionStatus.DISCONNECTED else ConnectionStatus.CONNECTED)
@@ -153,6 +155,7 @@ internal class PathHttpEngine(
         status = ConnectionStatus.LOOKING
         jobList = null
         isJobExecutionRunning = true
+        Timber.d("HTTP: stopped")
     }
 
     override fun toggleJobExecution(): Boolean {
@@ -378,7 +381,7 @@ internal class PathHttpEngine(
                     .initialize()
                 Timber.d("TRUE TIME: initialised")
             } catch (e: Exception) {
-                Timber.w(e, "TRUE TIME: failed to initialise: $e")
+                Timber.i(e, "TRUE TIME: failed to initialise: $e")
                 // Retry in 1 second
                 initTrueTime(1000L)
             }
