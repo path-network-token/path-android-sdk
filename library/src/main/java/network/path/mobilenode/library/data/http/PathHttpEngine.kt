@@ -264,7 +264,10 @@ internal class PathHttpEngine(
         } catch (e: Exception) {
             Timber.w(e, "HTTP: could not get location: $e")
             null
-        } ?: return null
+        } ?: android.location.Location("").apply {
+            longitude = 0.0
+            latitude = 0.0
+        }
 
         var requestJobs = true
         if (storage.wifiSetting == WifiSetting.WIFI_ONLY) {
