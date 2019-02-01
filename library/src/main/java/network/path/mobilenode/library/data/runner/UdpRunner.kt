@@ -19,7 +19,7 @@ internal class UdpRunner : Runner {
             }
         }
 
-    private fun runUdpJob(jobRequest: JobRequest): String {
+    private fun runUdpJob(jobRequest: JobRequest): Pair<String, Long?> {
         DatagramSocket().use {
             val port = jobRequest.endpointPortOrDefault(Constants.DEFAULT_UDP_PORT)
             val socketAddress = InetAddress.getByName(jobRequest.endpointHost)
@@ -28,6 +28,6 @@ internal class UdpRunner : Runner {
             val datagramPacket = DatagramPacket(body.toByteArray(), body.length, socketAddress, port)
             it.send(datagramPacket)
         }
-        return "UDP packet sent successfully"
+        return "UDP packet sent successfully" to null
     }
 }

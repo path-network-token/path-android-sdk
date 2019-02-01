@@ -21,12 +21,12 @@ internal class HttpRunner(private val okHttpClient: OkHttpClient, private val st
     override fun runJob(jobRequest: JobRequest, timeSource: TimeSource) =
         computeJobResult(jobType, jobRequest, timeSource) { runHttpJob(it) }
 
-    private fun runHttpJob(jobRequest: JobRequest): String {
+    private fun runHttpJob(jobRequest: JobRequest): Pair<String, Long?> {
         val request = buildRequest(jobRequest)
 
         return okHttpClient.newCall(request).execute().use {
             it.getBody().string()
-        }
+        } to null
     }
 
     private fun buildRequest(jobRequest: JobRequest): Request {

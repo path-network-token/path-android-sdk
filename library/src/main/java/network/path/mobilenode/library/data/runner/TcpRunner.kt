@@ -20,7 +20,7 @@ internal class TcpRunner(private val factory: SocketFactory) : Runner {
             }
         }
 
-    private fun runTcpJob(jobRequest: JobRequest): String =
+    private fun runTcpJob(jobRequest: JobRequest): Pair<String, Long?> =
         factory.createSocket().use {
             val port = jobRequest.endpointPortOrDefault(Constants.DEFAULT_TCP_PORT)
             val address = InetSocketAddress(jobRequest.endpointHost, port)
@@ -34,6 +34,6 @@ internal class TcpRunner(private val factory: SocketFactory) : Runner {
                 it.readText(Constants.RESPONSE_LENGTH_BYTES_MAX)
             } else {
                 "TCP connection established successfully"
-            }
+            } to null
         }
 }

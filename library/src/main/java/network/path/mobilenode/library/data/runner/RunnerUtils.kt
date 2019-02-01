@@ -14,9 +14,9 @@ internal fun computeJobResult(
     jobType: JobType,
     jobRequest: JobRequest,
     timeSource: TimeSource,
-    block: (JobRequest) -> String
+    block: (JobRequest) -> Pair<String, Long?>
 ): JobResult {
-    var responseBody = ""
+    var responseBody: Pair<String, Long?> = "" to null
     var isResponseKnown = false
 
     val requestDurationMillis = timeSource.measure {
@@ -24,20 +24,21 @@ internal fun computeJobResult(
             responseBody = block(jobRequest)
             isResponseKnown = true
         } catch (e: IOException) {
-            responseBody = e.toString()
+            responseBody = e.toString() to null
         } catch (e: Exception) {
-            responseBody = e.toString()
+            responseBody = e.toString() to null
         }
     }
 
-    val status = if (isResponseKnown) calculateJobStatus(requestDurationMillis, jobRequest) else Status.UNKNOWN
+    val duration = responseBody.second ?: requestDurationMillis
+    val status = if (isResponseKnown) calculateJobStatus(duration, jobRequest) else Status.UNKNOWN
 
     Timber.d("RUNNER: [$jobRequest] => $status")
     return JobResult(
         checkType = jobType,
         executionUuid = jobRequest.executionUuid,
-        responseTime = requestDurationMillis,
-        responseBody = responseBody,
+        responseTime = duration,
+        responseBody = responseBody.first,
         status = status
     )
 }

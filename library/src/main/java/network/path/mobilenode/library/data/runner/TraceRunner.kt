@@ -3,6 +3,7 @@ package network.path.mobilenode.library.data.runner
 import com.google.gson.Gson
 import network.path.mobilenode.library.Constants
 import network.path.mobilenode.library.data.runner.mtr.Mtr
+import network.path.mobilenode.library.data.runner.mtr.MtrResult
 import network.path.mobilenode.library.domain.entity.JobRequest
 import network.path.mobilenode.library.domain.entity.JobType
 import network.path.mobilenode.library.domain.entity.endpointHost
@@ -23,9 +24,14 @@ internal class TraceRunner(private val gson: Gson) : Runner {
             }
         }
 
-    private fun runTraceJob(jobRequest: JobRequest): String {
+    private fun runTraceJob(jobRequest: JobRequest): Pair<String, Long?> {
         val port = jobRequest.endpointPort ?: 0
         val res = Mtr().trace(jobRequest.endpointHost, port, false)
-        return if (res != null) gson.toJson(res.filter { it != null && it.ttl != 0 }) else ""
+        return if (res != null) {
+            val filtered = res.filterNotNull().filter { it.ttl != 0 }
+            val lastHops = filtered.groupBy(MtrResult::ttl).maxBy { it.key }?.value
+            val duration = lastHops?.filter { !it.timeout }?.map { it.delay * 1_000_000 }?.average()
+            gson.toJson(filtered) to duration?.toLong()
+        } else "" to null
     }
 }

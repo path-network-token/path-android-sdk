@@ -1,6 +1,6 @@
 package network.path.mobilenode.library.data.runner.mtr
 
-internal class MtrResult(
+internal data class MtrResult(
         val ttl: Int,
         val host: String,
         val ip: String,
