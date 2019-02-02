@@ -7,6 +7,7 @@ import network.path.mobilenode.library.data.runner.mtr.MtrResult
 import network.path.mobilenode.library.domain.entity.JobRequest
 import network.path.mobilenode.library.domain.entity.JobType
 import network.path.mobilenode.library.domain.entity.endpointHost
+import timber.log.Timber
 
 internal class TraceRunner(private val gson: Gson) : Runner {
     companion object {
@@ -28,10 +29,31 @@ internal class TraceRunner(private val gson: Gson) : Runner {
         val port = jobRequest.endpointPort ?: 0
         val res = Mtr().trace(jobRequest.endpointHost, port, false)
         return if (res != null) {
-            val filtered = res.filterNotNull().filter { it.ttl != 0 }
-            val lastHops = filtered.groupBy(MtrResult::ttl).maxBy { it.key }?.value
-            val duration = lastHops?.filter { !it.timeout }?.map { it.delay * 1_000_000 }?.average()
-            gson.toJson(filtered) to duration?.toLong()
+            val grouped = res.filterNotNull().filter { it.ttl != 0 }.groupBy { "${it.ttl}${it.ip}" }
+            val folded = grouped.map {
+                val first = it.value.first()
+                val filtered = it.value.filterNot { probe -> probe.timeout }
+                if (filtered.isEmpty()) {
+                    first
+                } else {
+                    val avg = filtered.map { probe -> probe.delay }.average()
+                    val min = filtered.minBy { probe -> probe.delay }?.delay ?: avg
+                    val max = filtered.maxBy { probe -> probe.delay }?.delay ?: avg
+                    MtrResult(
+                        first.ttl,
+                        first.host,
+                        first.ip,
+                        false,
+                        avg,
+                        min,
+                        max,
+                        first.err
+                    )
+                }
+            }
+            val duration = folded.filter { !it.timeout }.maxBy { it.delay }?.delay
+            Timber.d("TRACE: combined result [${folded.fold(StringBuilder()) { sb, r -> sb.append(r).append("\n") }}]")
+            gson.toJson(folded) to duration?.toLong()
         } else "" to null
     }
 }

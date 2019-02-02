@@ -5,9 +5,9 @@ internal data class MtrResult(
         val host: String,
         val ip: String,
         val timeout: Boolean,
-        val recv_ttl: Int,
-        val ext: String?,
         val delay: Double,
+        val min: Double = delay,
+        val max: Double = delay,
         val err: String?
 )
 

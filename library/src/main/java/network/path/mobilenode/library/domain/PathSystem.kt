@@ -52,7 +52,7 @@ internal constructor(
             if (INSTANCE == null) {
                 val gson = createLenientGson()
                 val threadManager = CustomThreadPoolManager()
-                val okHttpClient = createOkHttpClient(isTest)
+                val okHttpClient = createOkHttpClient()
                 val storage = PathStorageImpl(context, isTest)
                 val engine = PathHttpEngine.create(
                     context,
@@ -107,7 +107,7 @@ internal constructor(
             return Numeric.prependHexPrefix(sb.toString())
         }
 
-        private fun createOkHttpClient(isTest: Boolean): OkHttpClient = OkHttpClient.Builder()
+        private fun createOkHttpClient(): OkHttpClient = OkHttpClient.Builder()
             .readTimeout(Constants.JOB_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
             .writeTimeout(Constants.JOB_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
             .connectTimeout(Constants.JOB_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)

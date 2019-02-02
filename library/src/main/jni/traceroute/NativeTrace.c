@@ -62,7 +62,7 @@ JNIEXPORT jobjectArray JNICALL native_trace(JNIEnv *env, jclass clazz, jstring s
 
     jclass cls = (*env)->FindClass(env, JNI_RESULT_CLASS);
     jmethodID constructorId = (*env)->GetMethodID(env, cls, "<init>",
-                                                  "(ILjava/lang/String;Ljava/lang/String;ZILjava/lang/String;DLjava/lang/String;)V");
+                                                  "(ILjava/lang/String;Ljava/lang/String;ZDDDLjava/lang/String;)V");
 
     array = (*env)->NewObjectArray(env, count, cls, NULL);
     for (int i = 0; i < count; ++i) {
@@ -90,15 +90,15 @@ JNIEXPORT jobjectArray JNICALL native_trace(JNIEnv *env, jclass clazz, jstring s
 
         jstring host = (*env)->NewStringUTF(env, probe_res->host);
         jstring ip = (*env)->NewStringUTF(env, probe_res->ip);
-        jstring ext = probe_res->err[0] ? (*env)->NewStringUTF(env, probe_res->ext) : NULL;
+        // jstring ext = probe_res->err[0] ? (*env)->NewStringUTF(env, probe_res->ext) : NULL;
         jstring err = probe_res->ext[0] ? (*env)->NewStringUTF(env, probe_res->err) : NULL;
         jobject o = (*env)->NewObject(env, cls, constructorId,
                                       (jint) probe_res->ttl,
                                       host,
                                       ip,
                                       (jboolean) probe_res->timeout,
-                                      (jint) probe_res->recv_ttl,
-                                      ext,
+                                      (jdouble) probe_res->delay,
+                                      (jdouble) probe_res->delay,
                                       (jdouble) probe_res->delay,
                                       err);
         (*env)->SetObjectArrayElement(env, array, i, o);
