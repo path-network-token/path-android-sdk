@@ -1,5 +1,11 @@
 package example.mobilenode.network.path.pathsdkexample.ui.main
 
+import android.app.Activity
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.net.VpnService
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -11,15 +17,19 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import example.mobilenode.network.path.pathsdkexample.R
 import kotlinx.android.synthetic.main.main_fragment.*
 import network.path.mobilenode.library.domain.entity.ConnectionStatus
 import network.path.mobilenode.library.domain.entity.JobType
 import network.path.mobilenode.library.domain.entity.JobTypeStatistics
 import network.path.mobilenode.library.domain.entity.NodeInfo
+import network.path.mobilenode.library.vpn.PathVpnService
 
 class MainFragment : Fragment() {
     companion object {
+        private const val REQUEST_VPN = 0x12
+
         fun newInstance() = MainFragment()
     }
 
@@ -66,12 +76,50 @@ class MainFragment : Fragment() {
         }
 
         buttonLogs.setOnClickListener {
-            requireActivity().supportFragmentManager
-                .beginTransaction()
-                .addToBackStack(LogFragment::class.java.simpleName)
-                .replace(R.id.container, LogFragment.newInstance())
-                .commit()
+            startVpn()
         }
+
+        LocalBroadcastManager.getInstance(requireContext()).registerReceiver(object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                val isRunning = intent?.getBooleanExtra("running", false) == true
+                updateVpnButton(!isRunning)
+            }
+        }, IntentFilter(PathVpnService.BROADCAST_VPN_STATE))
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == REQUEST_VPN) {
+            if (resultCode == Activity.RESULT_OK) {
+                val context = requireContext()
+                context.startService(Intent(context, PathVpnService::class.java))
+            } else {
+                updateVpnButton(true)
+            }
+        }
+    }
+
+    private fun updateVpnButton(enable: Boolean) {
+        buttonLogs.isEnabled = enable
+        buttonLogs.text = if (enable) "Start VPN" else "VPN is running"
+    }
+
+    private fun startVpn() {
+        updateVpnButton(false)
+        val vpnIntent = VpnService.prepare(requireContext())
+        if (vpnIntent != null) {
+            startActivityForResult(vpnIntent, REQUEST_VPN)
+        } else {
+            onActivityResult(REQUEST_VPN, Activity.RESULT_OK, null)
+        }
+    }
+
+    private fun showLogFragment() {
+        requireActivity().supportFragmentManager
+            .beginTransaction()
+            .addToBackStack(LogFragment::class.java.simpleName)
+            .replace(R.id.container, LogFragment.newInstance())
+            .commit()
     }
 
     private fun updateState(isStarted: Boolean) {
