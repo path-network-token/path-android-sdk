@@ -51,8 +51,8 @@ internal class TraceRunner(private val gson: Gson) : Runner {
                     )
                 }
             }
-            val duration = folded.filter { !it.timeout }.maxBy { it.delay }?.delay
-            Timber.d("TRACE: combined result [${folded.fold(StringBuilder()) { sb, r -> sb.append(r).append("\n") }}]")
+            val duration = folded.filter { !it.timeout }.map { it.delay * 1_000 }.max()
+            Timber.d("TRACE: duration [$duration], result [${folded.fold(StringBuilder()) { sb, r -> sb.append("\n").append(r) }}]")
             gson.toJson(folded) to duration?.toLong()
         } else "" to null
     }
