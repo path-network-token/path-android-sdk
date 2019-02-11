@@ -9,11 +9,20 @@
 #define JNI_PACKAGE "network/path/mobilenode/library/data/runner/mtr/"
 #define JNI_REG_CLASS JNI_PACKAGE "Mtr"
 #define JNI_RESULT_CLASS JNI_PACKAGE "MtrResult"
+#define JNI_SUMMARY_CLASS JNI_PACKAGE "MtrSummary"
 
-JNIEXPORT jobjectArray JNICALL native_trace(JNIEnv *env, jclass clazz, jstring server, jint port, jboolean resolve) {
+JNIEXPORT jobject JNICALL native_trace(JNIEnv *env,
+                                       jclass clazz,
+                                       jstring server,
+                                       jint port,
+                                       jboolean resolve,
+                                       jint maxHops,
+                                       jint packetSize
+) {
+    jobject result = NULL;
     jobjectArray array = NULL;
     char **argv = NULL;
-    int argc = 3;
+    int argc = 6;
 
     const char *c_str;
     c_str = (*env)->GetStringUTFChars(env, server, NULL);
@@ -21,7 +30,8 @@ JNIEXPORT jobjectArray JNICALL native_trace(JNIEnv *env, jclass clazz, jstring s
         goto complete;
     }
 
-    __android_log_print(ANDROID_LOG_INFO, LOG_TAG, "MTR: %s, %d, %d", c_str, port, resolve);
+    __android_log_print(ANDROID_LOG_INFO, LOG_TAG, "MTR: [%s:%d], resolve = %d, hops = %d, packetSize = %d", c_str,
+                        port, resolve, maxHops, packetSize);
 
     if (resolve == JNI_FALSE) {
         argc += 1;
@@ -41,21 +51,36 @@ JNIEXPORT jobjectArray JNICALL native_trace(JNIEnv *env, jclass clazz, jstring s
     }
 
     int argi = 0;
+    // Executable name (+1)
     strcpy(argv[argi++], "traceroute");
+    // IP4 setting (+1)
     strcpy(argv[argi++], "-4");
+    // "Resolve" setting (+1)
     if (resolve == JNI_FALSE) {
         strcpy(argv[argi++], "-n");
     }
-    strcpy(argv[argi++], c_str);
+    // "Max hops" setting (+2)
+    strcpy(argv[argi++], "-m");
+    sprintf(argv[argi++], "%d", maxHops);
+
+    // "Port" setting (+2)
     if (port != 0) {
         strcpy(argv[argi++], "-p");
         sprintf(argv[argi++], "%d", port);
     }
 
+    // "Host" setting (+1)
+    strcpy(argv[argi++], c_str);
+
+    // "packetlen" setting (+1)
+    sprintf(argv[argi++], "%d", packetSize);
+
     int count = 0;
     probe_result *results = NULL;
-    int res = traceroute(argc, argv, &count, &results);
+    char addr[INET6_ADDRSTRLEN];
+    int res = traceroute(argc, argv, &count, &results, addr);
 
+    __android_log_print(ANDROID_LOG_INFO, LOG_TAG, "MTR RESULT: %d (%s)", res, addr);
     if (res) {
         goto complete;
     }
@@ -104,6 +129,20 @@ JNIEXPORT jobjectArray JNICALL native_trace(JNIEnv *env, jclass clazz, jstring s
         (*env)->SetObjectArrayElement(env, array, i, o);
     }
 
+    jclass summaryCls = (*env)->FindClass(env, JNI_SUMMARY_CLASS);
+    jmethodID summaryConstructorId = (*env)->GetMethodID(env, summaryCls, "<init>",
+                                                         "([L" JNI_RESULT_CLASS ";Ljava/lang/String;Ljava/lang/String;II)V");
+
+    jstring targetIp = (*env)->NewStringUTF(env, addr);
+    result = (*env)->NewObject(env,
+                               summaryCls,
+                               summaryConstructorId,
+                               array,
+                               server,
+                               targetIp,
+                               (jint) maxHops,
+                               (jint) packetSize);
+
     complete:
     if (results != NULL) {
         free(results);
@@ -120,12 +159,12 @@ JNIEXPORT jobjectArray JNICALL native_trace(JNIEnv *env, jclass clazz, jstring s
         }
         free(argv);
     }
-    return array;
+    return result;
 }
 
 
 static JNINativeMethod gMethods[] = {
-        {"trace", "(Ljava/lang/String;IZ)[L" JNI_RESULT_CLASS ";", (void *) native_trace},
+        {"trace", "(Ljava/lang/String;IZII)L" JNI_SUMMARY_CLASS ";", (void *) native_trace},
 };
 
 static int registerNativeMethods(JNIEnv *env, const char *className, JNINativeMethod *gMethods,

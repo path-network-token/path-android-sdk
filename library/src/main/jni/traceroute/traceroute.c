@@ -530,7 +530,7 @@ static CLIF_argument arg_list[] = {
 
 static int do_it(probe_result *results);
 
-int traceroute(int argc, char *argv[], int *count, probe_result **probe_results) {
+int traceroute(int argc, char *argv[], int *count, probe_result **probe_results, char *dst_addr_name) {
     setlocale(LC_ALL, "");
     setlocale(LC_NUMERIC, "C");    /*  avoid commas in msec printed  */
 
@@ -627,6 +627,7 @@ int traceroute(int argc, char *argv[], int *count, probe_result **probe_results)
     int ret = do_it(results);
     *probe_results = results;
     *count = num_probes;
+    strncpy(dst_addr_name, addr2str(&dst_addr), INET6_ADDRSTRLEN);
     return ret;
 }
 

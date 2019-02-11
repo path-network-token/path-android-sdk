@@ -1,11 +1,16 @@
 package network.path.mobilenode.library.data.android
 
+import android.annotation.SuppressLint
 import android.content.Context
+import android.location.Criteria
 import android.location.Location
 import android.os.Bundle
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.api.GoogleApiClient
-import com.google.android.gms.location.*
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationResult
+import com.google.android.gms.location.LocationServices
 import timber.log.Timber
 
 internal class LastLocationProvider(context: Context) :
@@ -26,6 +31,7 @@ internal class LastLocationProvider(context: Context) :
     private val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as android.location.LocationManager
     private val fusedLocationProvider = LocationServices.getFusedLocationProviderClient(context)
     private var lastLocation: Location? = null
+    private var lastProvider: String? = null
 
     private val oldListener = object : android.location.LocationListener {
         override fun onStatusChanged(provider: String, status: Int, extras: Bundle?) {
@@ -58,7 +64,7 @@ internal class LastLocationProvider(context: Context) :
         try {
             fusedLocationProvider.requestLocationUpdates(request, this, null)
         } catch (e: SecurityException) {
-            Timber.w("LOCATION: cannot request fused provider updates: $e")
+            Timber.w(e, "LOCATION: cannot request fused provider updates: $e")
         }
 
         updateListener()
@@ -88,15 +94,22 @@ internal class LastLocationProvider(context: Context) :
         null
     }
 
+    @SuppressLint("MissingPermission")
     private fun updateListener() {
         val criteria = android.location.Criteria()
-        criteria.setAccuracy(android.location.Criteria.ACCURACY_FINE)
-        val provider = locationManager.getBestProvider(criteria, true)
-        try {
-            locationManager.requestLocationUpdates(provider, UPDATE_DELAY, 0f, oldListener)
-            Timber.d("LOCATION: requested updates from [$provider]")
-        } catch (e: Exception) {
-            Timber.w("LOCATION: cannot request location manager updates: $e")
+        criteria.accuracy = android.location.Criteria.ACCURACY_COARSE
+        criteria.isAltitudeRequired = false
+        criteria.isBearingRequired = false
+        criteria.powerRequirement = Criteria.POWER_LOW
+        val provider = locationManager.getBestProvider(criteria, true) ?: return
+        if (lastProvider != provider) {
+            try {
+                locationManager.requestLocationUpdates(provider, UPDATE_DELAY, 0f, oldListener)
+                lastProvider = provider
+                Timber.d("LOCATION: requested updates from [$provider]")
+            } catch (e: Exception) {
+                Timber.w(e, "LOCATION: cannot request location manager updates: $e")
+            }
         }
     }
 

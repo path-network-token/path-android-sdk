@@ -143,4 +143,4 @@ static void __init_ ## MOD (void) {    \
     tr_register_module (&MOD);    \
 }
 
-int traceroute(int argc, char *argv[], int *count, probe_result **probe_results);
+int traceroute(int argc, char *argv[], int *count, probe_result **probe_results, char *dst_addr_name);
