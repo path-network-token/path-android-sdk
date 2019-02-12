@@ -116,14 +116,14 @@ static int raw_send_probe(probe *pb, int ttl) {
 }
 
 
-static probe *raw_check_reply(int sk, int err, sockaddr_any *from,
+static probe *raw_check_reply(probe *probes, int sk, int err, sockaddr_any *from,
                               char *buf, size_t len) {
     probe *pb;
 
     if (!equal_addr(&dest_addr, from))
         return NULL;
 
-    pb = probe_by_seq(seq);
+    pb = probe_by_seq(probes, seq);
     if (!pb) return NULL;
 
     if (!err) pb->final = 1;
@@ -132,12 +132,12 @@ static probe *raw_check_reply(int sk, int err, sockaddr_any *from,
 }
 
 
-static int raw_recv_probe(int sk, int revents) {
+static int raw_recv_probe(probe *probes, int sk, int revents) {
 
     if (!(revents & (POLLIN | POLLERR)))
         return 0;
 
-    return recv_reply(sk, !!(revents & POLLERR), raw_check_reply);
+    return recv_reply(probes, sk, !!(revents & POLLERR), raw_check_reply);
 }
 
 

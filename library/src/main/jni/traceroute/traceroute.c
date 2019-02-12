@@ -109,7 +109,6 @@ static unsigned int opts_idx = 1;    /*  first one reserved...   */
 
 static int af = 0;
 
-static probe *probes = NULL;
 static unsigned int num_probes = 0;
 
 
@@ -528,7 +527,7 @@ static CLIF_argument arg_list[] = {
 };
 
 
-static int do_it(probe_result *results);
+static int do_it(probe *probes, probe_result *results);
 
 int traceroute(int argc, char *argv[], int *count, probe_result **probe_results, char *dst_addr_name) {
     setlocale(LC_ALL, "");
@@ -604,31 +603,45 @@ int traceroute(int argc, char *argv[], int *count, probe_result **probe_results,
             data_len = packet_len - header_len;
     }
 
-
+    int res = 0;
     num_probes = max_hops * probes_per_hop;
-    probes = calloc(num_probes, sizeof(*probes));
+    probe *probes = calloc(num_probes, sizeof(*probes));
     if (!probes) return error("calloc");
 
 
     if (ops->options && opts_idx > 1) {
         opts[0] = strdup(module);        /*  aka argv[0] ...  */
-        if (CLIF_parse(opts_idx, opts, ops->options, 0, CLIF_KEYWORD) < 0)
-            return -2;
+        if (CLIF_parse(opts_idx, opts, ops->options, 0, CLIF_KEYWORD) < 0) {
+            res = -2;
+            goto complete;
+        }
     }
 
-    if (ops->init(&dst_addr, dst_port_seq, &data_len) < 0)
-        return ex_error("trace method's init failed");
+    if (ops->init(&dst_addr, dst_port_seq, &data_len) < 0) {
+        res = ex_error("trace method's init failed");
+        goto complete;
+    }
 
 
     probe_result *results = calloc(num_probes, sizeof(probe_result));
-    if (!results) return error("calloc");
+    if (!results) {
+        res = error("calloc");
+        goto complete;
+    }
     memset(results, 0, num_probes * sizeof(probe_result));
 
-    int ret = do_it(results);
+    res = do_it(probes, results);
     *probe_results = results;
     *count = num_probes;
     strncpy(dst_addr_name, addr2str(&dst_addr), INET6_ADDRSTRLEN);
-    return ret;
+
+    complete:
+    for (int i = 0; i < num_probes; ++i) {
+        probe_done(probes + i);
+    }
+
+    free(probes);
+    return res;
 }
 
 
@@ -674,7 +687,7 @@ static void print_addr(sockaddr_any *res, probe_result *result, bool useLog) {
 }
 
 
-static void print_probe(probe *pb, probe_result *result) {
+static void print_probe(probe *probes, probe *pb, probe_result *result) {
     unsigned int idx = (pb - probes);
     unsigned int ttl = idx / probes_per_hop + 1;
     unsigned int np = idx % probes_per_hop;
@@ -753,7 +766,7 @@ static void print_end(void) {
 
 /*	Check  expiration  stuff	*/
 
-static void check_expired(probe *pb) {
+static void check_expired(probe *probes, probe *pb) {
     int idx = (pb - probes);
     probe *p, *endp = probes + num_probes;
     probe *fp = NULL, *pfp = NULL;
@@ -890,7 +903,7 @@ static void check_expired(probe *pb) {
 }
 
 
-probe *probe_by_seq(int seq) {
+probe *probe_by_seq(probe *probes, int seq) {
     int n;
 
     if (seq <= 0) return NULL;
@@ -903,7 +916,7 @@ probe *probe_by_seq(int seq) {
     return NULL;
 }
 
-probe *probe_by_sk(int sk) {
+probe *probe_by_sk(probe *probes, int sk) {
     int n;
 
     if (sk <= 0) return NULL;
@@ -917,12 +930,12 @@ probe *probe_by_sk(int sk) {
 }
 
 
-static void poll_callback(int fd, int revents) {
-    ops->recv_probe(fd, revents);
+static void poll_callback(probe *probes, int fd, int revents) {
+    ops->recv_probe(probes, fd, revents);
 }
 
 
-static int do_it(probe_result *results) {
+static int do_it(probe *probes, probe_result *results) {
     int start = (first_hop - 1) * probes_per_hop;
     int end = num_probes;
     double last_send = 0;
@@ -943,7 +956,7 @@ static int do_it(probe_result *results) {
                 now_time - pb->send_time >= wait_secs
                     ) {
                 ops->expire_probe(pb);
-                check_expired(pb);
+                check_expired(probes, pb);
             }
 
 
@@ -951,7 +964,7 @@ static int do_it(probe_result *results) {
 
                 if (n == start) {    /*  can print it now   */
                     probe_result *res = &results[n];
-                    print_probe(pb, res);
+                    print_probe(probes, pb, res);
                     start++;
                 }
 
@@ -996,7 +1009,7 @@ static int do_it(probe_result *results) {
 
             if (timeout < 0) timeout = 0;
 
-            do_poll(timeout, poll_callback);
+            do_poll(probes, timeout, poll_callback);
         }
 
     }
@@ -1247,7 +1260,7 @@ void probe_done(probe *pb) {
 }
 
 
-int recv_reply(int sk, int err, check_reply_t check_reply) {
+int recv_reply(probe *probes, int sk, int err, check_reply_t check_reply) {
     struct msghdr msg;
     sockaddr_any from;
     struct iovec iov;
@@ -1301,7 +1314,7 @@ int recv_reply(int sk, int err, check_reply_t check_reply) {
     }
 
 
-    pb = check_reply(sk, err, &from, bufp, n);
+    pb = check_reply(probes, sk, err, &from, bufp, n);
     if (!pb) {
 
         /*  for `frag needed' case at the local host,

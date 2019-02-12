@@ -166,7 +166,7 @@ static int icmp_send_probe(probe *pb, int ttl) {
 }
 
 
-static probe *icmp_check_reply(int sk, int err, sockaddr_any *from,
+static probe *icmp_check_reply(probe *probes, int sk, int err, sockaddr_any *from,
                                char *buf, size_t len) {
     int af = dest_addr.sa.sa_family;
     int type;
@@ -199,7 +199,7 @@ static probe *icmp_check_reply(int sk, int err, sockaddr_any *from,
     if (recv_id != ident)
         return NULL;
 
-    pb = probe_by_seq(recv_seq);
+    pb = probe_by_seq(probes, recv_seq);
     if (!pb) return NULL;
 
 
@@ -217,12 +217,12 @@ static probe *icmp_check_reply(int sk, int err, sockaddr_any *from,
 }
 
 
-static int icmp_recv_probe(int sk, int revents) {
+static int icmp_recv_probe(probe *probes, int sk, int revents) {
 
     if (!(revents & (POLLIN | POLLERR)))
         return 0;
 
-    return recv_reply(sk, !!(revents & POLLERR), icmp_check_reply);
+    return recv_reply(probes, sk, !!(revents & POLLERR), icmp_check_reply);
 }
 
 

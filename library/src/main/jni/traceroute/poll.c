@@ -63,7 +63,7 @@ static int cleanup_polls(void) {
 }
 
 
-int do_poll(double timeout, void (*callback)(int fd, int revents)) {
+int do_poll(probe *probes, double timeout, void (*callback)(probe *probes, int fd, int revents)) {
     int nfds, n, i;
 
     nfds = cleanup_polls();
@@ -78,7 +78,7 @@ int do_poll(double timeout, void (*callback)(int fd, int revents)) {
 
     for (i = 0; n && i < num_polls; i++) {
         if (pfd[i].revents) {
-            callback(pfd[i].fd, pfd[i].revents);
+            callback(probes, pfd[i].fd, pfd[i].revents);
             n--;
         }
     }

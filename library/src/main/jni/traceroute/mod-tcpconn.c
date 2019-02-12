@@ -85,7 +85,7 @@ static int tcp_send_probe(probe *pb, int ttl) {
 }
 
 
-static probe *tcp_check_reply(int sk, int err, sockaddr_any *from,
+static probe *tcp_check_reply(probe *probes, int sk, int err, sockaddr_any *from,
                               char *buf, size_t len) {
     int af = dest_addr.sa.sa_family;
     int type, code, info;
@@ -152,7 +152,7 @@ static probe *tcp_check_reply(int sk, int err, sockaddr_any *from,
     if (tcp->dest != dest_addr.sin.sin_port)
         return NULL;
 
-    pb = probe_by_seq(tcp->source);
+    pb = probe_by_seq(probes, tcp->source);
     if (!pb) return NULL;
 
 
@@ -163,12 +163,12 @@ static probe *tcp_check_reply(int sk, int err, sockaddr_any *from,
 }
 
 
-static int tcp_recv_probe(int sk, int revents) {
+static int tcp_recv_probe(probe *probes, int sk, int revents) {
 
     if (sk != icmp_sk) {    /*  a tcp socket   */
         probe *pb;
 
-        pb = probe_by_sk(sk);
+        pb = probe_by_sk(probes, sk);
         if (!pb) {
             del_poll(sk);
             return 0;
@@ -200,7 +200,7 @@ static int tcp_recv_probe(int sk, int revents) {
     if (!(revents & POLLIN))
         return 0;
 
-    return recv_reply(icmp_sk, 0, tcp_check_reply);
+    return recv_reply(probes, icmp_sk, 0, tcp_check_reply);
 }
 
 

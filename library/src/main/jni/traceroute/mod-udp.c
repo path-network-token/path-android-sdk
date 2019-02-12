@@ -176,11 +176,11 @@ static int udp_send_probe(probe *pb, int ttl) {
 }
 
 
-static probe *udp_check_reply(int sk, int err, sockaddr_any *from,
+static probe *udp_check_reply(probe *probes, int sk, int err, sockaddr_any *from,
                               char *buf, size_t len) {
     probe *pb;
 
-    pb = probe_by_sk(sk);
+    pb = probe_by_sk(probes, sk);
     if (!pb) return NULL;
 
     if (pb->seq != from->sin.sin_port)
@@ -192,12 +192,12 @@ static probe *udp_check_reply(int sk, int err, sockaddr_any *from,
 }
 
 
-static int udp_recv_probe(int sk, int revents) {
+static int udp_recv_probe(probe *probes, int sk, int revents) {
 
     if (!(revents & (POLLIN | POLLERR)))
         return 0;
 
-    return recv_reply(sk, !!(revents & POLLERR), udp_check_reply);
+    return recv_reply(probes, sk, !!(revents & POLLERR), udp_check_reply);
 }
 
 
