@@ -220,7 +220,7 @@ static int dccp_send_probe(probe *pb, int ttl) {
 }
 
 
-static probe *dccp_check_reply(probe *probes, int sk, int err, sockaddr_any *from,
+static probe *dccp_check_reply(probe *probes, unsigned int num_probes, int sk, int err, sockaddr_any *from,
                                char *buf, size_t len) {
     probe *pb;
     struct dccp_hdr *ndh = (struct dccp_hdr *) buf;
@@ -245,7 +245,7 @@ static probe *dccp_check_reply(probe *probes, int sk, int err, sockaddr_any *fro
     if (!equal_addr(&dest_addr, from))
         return NULL;
 
-    pb = probe_by_seq(probes, sport);
+    pb = probe_by_seq(probes, num_probes, sport);
     if (!pb) return NULL;
 
     if (!err) pb->final = 1;
@@ -254,12 +254,12 @@ static probe *dccp_check_reply(probe *probes, int sk, int err, sockaddr_any *fro
 }
 
 
-static int dccp_recv_probe(probe *probes, int sk, int revents) {
+static int dccp_recv_probe(probe *probes, unsigned int num_probes, int sk, int revents) {
 
     if (!(revents & (POLLIN | POLLERR)))
         return 0;
 
-    return recv_reply(probes, sk, !!(revents & POLLERR), dccp_check_reply);
+    return recv_reply(probes, num_probes, sk, !!(revents & POLLERR), dccp_check_reply);
 }
 
 

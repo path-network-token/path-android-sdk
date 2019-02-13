@@ -428,7 +428,7 @@ static int tcp_send_probe(probe *pb, int ttl) {
 }
 
 
-static probe *tcp_check_reply(probe *probes, int sk, int err, sockaddr_any *from,
+static probe *tcp_check_reply(probe *probes, unsigned int num_probes, int sk, int err, sockaddr_any *from,
                               char *buf, size_t len) {
     probe *pb;
     struct tcphdr *tcp = (struct tcphdr *) buf;
@@ -453,7 +453,7 @@ static probe *tcp_check_reply(probe *probes, int sk, int err, sockaddr_any *from
     if (!equal_addr(&dest_addr, from))
         return NULL;
 
-    pb = probe_by_seq(probes, sport);
+    pb = probe_by_seq(probes, num_probes, sport);
     if (!pb) return NULL;
 
 
@@ -469,12 +469,12 @@ static probe *tcp_check_reply(probe *probes, int sk, int err, sockaddr_any *from
 }
 
 
-static int tcp_recv_probe(probe *probes, int sk, int revents) {
+static int tcp_recv_probe(probe *probes, unsigned int num_probes, int sk, int revents) {
 
     if (!(revents & (POLLIN | POLLERR)))
         return 0;
 
-    return recv_reply(probes, sk, !!(revents & POLLERR), tcp_check_reply);
+    return recv_reply(probes, num_probes, sk, !!(revents & POLLERR), tcp_check_reply);
 }
 
 

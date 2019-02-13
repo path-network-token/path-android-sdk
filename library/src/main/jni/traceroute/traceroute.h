@@ -47,7 +47,7 @@ struct tr_module_struct {
 
     int (*send_probe)(probe *pb, int ttl);
 
-    int (*recv_probe)(probe *probes, int fd, int revents);
+    int (*recv_probe)(probe *probes, unsigned int num_probes, int fd, int revents);
 
     void (*expire_probe)(probe *pb);
 
@@ -92,16 +92,16 @@ void parse_icmp_res(probe *pb, int type, int code, int info);
 
 void probe_done(probe *pb);
 
-typedef probe *(*check_reply_t)(probe *probes, int sk, int err, sockaddr_any *from,
+typedef probe *(*check_reply_t)(probe *probes, unsigned int num_probes, int sk, int err, sockaddr_any *from,
                                 char *buf, size_t len);
 
-int recv_reply(probe *probes, int sk, int err, check_reply_t check_reply);
+int recv_reply(probe *probes, unsigned int num_probes, int sk, int err, check_reply_t check_reply);
 
 int equal_addr(const sockaddr_any *a, const sockaddr_any *b);
 
-probe *probe_by_seq(probe *probes, int seq);
+probe *probe_by_seq(probe *probes, unsigned int num_probes, int seq);
 
-probe *probe_by_sk(probe *probes, int sk);
+probe *probe_by_sk(probe *probes, unsigned int num_probes, int sk);
 
 int bind_socket(int sk);
 
@@ -119,7 +119,7 @@ int add_poll(int fd, int events);
 
 void del_poll(int fd);
 
-int do_poll(probe *probes, double timeout, void (*callback)(probe *probes, int fd, int revents));
+int do_poll(probe *probes, unsigned int num_probes, double timeout, void (*callback)(probe *probes, unsigned int num_probes, int fd, int revents));
 
 void handle_extensions(probe *pb, char *buf, int len, int step);
 
