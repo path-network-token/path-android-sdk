@@ -1,6 +1,6 @@
 package network.path.mobilenode.library
 
-import com.google.gson.Gson
+import android.content.Context
 import network.path.mobilenode.library.data.runner.*
 import network.path.mobilenode.library.domain.PathStorage
 import network.path.mobilenode.library.domain.entity.JobRequest
@@ -31,7 +31,7 @@ class RunnerTest {
         val executor = PathJobExecutorImpl(
             Mockito.mock(OkHttpClient::class.java),
             Mockito.mock(PathStorage::class.java),
-            Mockito.mock(Gson::class.java),
+            Mockito.mock(Context::class.java),
             MockTimeSource
         )
 

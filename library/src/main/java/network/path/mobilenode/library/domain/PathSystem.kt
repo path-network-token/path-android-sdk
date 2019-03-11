@@ -62,7 +62,7 @@ internal constructor(
                     gson,
                     isTest
                 )
-                val jobExecutor = PathJobExecutorImpl(okHttpClient, storage, gson, TimeClock)
+                val jobExecutor = PathJobExecutorImpl(okHttpClient, storage, context, TimeClock)
                 INSTANCE = PathSystem(isTest, engine, storage, jobExecutor, threadManager)
             }
             return INSTANCE!!

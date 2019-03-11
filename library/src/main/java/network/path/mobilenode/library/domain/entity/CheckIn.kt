@@ -10,7 +10,7 @@ internal data class CheckIn(
         val lon: String? = null,
         val wallet: String,
         val deviceType: String? = "android",
-        val capabilities: Map<String, Int> = mapOf("traceroute" to 2),
+        val capabilities: Map<String, Int> = mapOf("traceroute" to 3),
         val pathApiVersion: String = Constants.PATH_API_VERSION,
         val nodeBuildVersion: String = BuildConfig.VERSION_NAME,
         val returnJobsMax: Int = 10

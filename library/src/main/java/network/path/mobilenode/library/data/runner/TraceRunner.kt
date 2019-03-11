@@ -1,25 +1,15 @@
 package network.path.mobilenode.library.data.runner
 
-import com.google.gson.Gson
+import android.content.Context
 import network.path.mobilenode.library.Constants
-import network.path.mobilenode.library.data.runner.mtr.Mtr
-import network.path.mobilenode.library.data.runner.mtr.MtrResult
-import network.path.mobilenode.library.data.runner.mtr.MtrSummary
 import network.path.mobilenode.library.domain.entity.JobRequest
 import network.path.mobilenode.library.domain.entity.JobType
 import network.path.mobilenode.library.domain.entity.endpointHost
-import timber.log.Timber
+import java.io.BufferedReader
+import java.io.File
+import java.io.InputStreamReader
 
-internal class TraceRunner(private val gson: Gson) : Runner {
-    companion object {
-        private const val MAX_HOPS = 30
-        private const val PACKET_SIZE = 60
-
-        init {
-            System.loadLibrary("traceroute")
-        }
-    }
-
+internal class TraceRunner(private val context: Context) : Runner {
     override val jobType = JobType.TRACEROUTE
 
     override fun runJob(jobRequest: JobRequest, timeSource: TimeSource) =
@@ -30,37 +20,19 @@ internal class TraceRunner(private val gson: Gson) : Runner {
         }
 
     private fun runTraceJob(jobRequest: JobRequest): Pair<String, Long?> {
-        val port = jobRequest.endpointPort ?: 0
-        val res = Mtr().trace(jobRequest.endpointHost, port, false, MAX_HOPS, PACKET_SIZE)
-        return if (res != null) {
-            val grouped = res.hops.filterNotNull().filter { it.ttl != 0 }.groupBy { "${it.ttl}${it.ip}" }
-            val folded = grouped.map {
-                val first = it.value.first()
-                val filtered = it.value.filterNot { probe -> probe.timeout }
-                if (filtered.isEmpty()) {
-                    first
-                } else {
-                    val avg = filtered.map { probe -> probe.delay }.average()
-                    val min = filtered.minBy { probe -> probe.delay }?.delay ?: avg
-                    val max = filtered.maxBy { probe -> probe.delay }?.delay ?: avg
-                    MtrResult(
-                        first.ttl,
-                        first.host,
-                        first.ip,
-                        false,
-                        avg,
-                        min,
-                        max,
-                        first.err
-                    )
-                }
-            }
-            val duration = folded.filter { !it.timeout }.map { it.delay * 1_000 }.max()
-            Timber.d("TRACE: duration [$duration], result [${folded.fold(StringBuilder()) { sb, r ->
-                sb.append("\n").append(r)
-            }}]")
-            val summary = MtrSummary(folded.toTypedArray(), res.target, res.targetIp, res.maxHops, res.packetSize)
-            gson.toJson(summary) to duration?.toLong()
-        } else "" to null
+        val libs = context.applicationInfo.nativeLibraryDir
+        val cmd = listOf(
+            File(libs, "libtraceroute.so").absolutePath,
+            "--icmp", "--wait=1,3,10", "-n", "--queries=10", jobRequest.endpointHost
+        )
+
+        val p = ProcessBuilder(cmd).start()
+        val sb = StringBuilder()
+        BufferedReader(InputStreamReader(p.inputStream)).useLines {
+            it.forEach { line -> sb.append(line) }
+        }
+        p.destroy()
+
+        return sb.toString() to null
     }
 }

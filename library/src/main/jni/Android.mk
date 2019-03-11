@@ -28,29 +28,32 @@ LOCAL_MODULE := traceroute
 
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/traceroute
 
-traceroute_src_files := \
-    NativeTrace.c \
-    as_lookups.c \
-    csum.c \
-    clif.c \
-    extension.c \
-    mod-dccp.c \
-    mod-icmp.c \
-    mod-raw.c \
-    mod-tcp.c \
-    mod-tcpconn.c \
-    mod-udp.c \
-    module.c \
-    poll.c \
-    random.c \
-    time.c \
-    traceroute.c
+TRACEROUTE_SOURCE := \
+    libsupp/clif.c \
+    traceroute/as_lookups.c \
+    traceroute/csum.c \
+    traceroute/extension.c \
+    traceroute/mod-dccp.c \
+    traceroute/mod-icmp.c \
+    traceroute/mod-raw.c \
+    traceroute/mod-tcp.c \
+    traceroute/mod-tcpconn.c \
+    traceroute/mod-udp.c \
+    traceroute/module.c \
+    traceroute/poll.c \
+    traceroute/random.c \
+    traceroute/time.c \
+    traceroute/traceroute.c
+
+LOCAL_CFLAGS += -I$(LOCAL_PATH)/traceroute/libsupp \
+				-I$(LOCAL_PATH)/traceroute/traceroute \
+				-I$(LOCAL_PATH)/traceroute/include
 
 LOCAL_LDLIBS := -llog
 
-LOCAL_SRC_FILES := $(addprefix traceroute/, $(traceroute_src_files))
+LOCAL_SRC_FILES := $(addprefix traceroute/, $(TRACEROUTE_SOURCE))
 
-include $(BUILD_SHARED_LIBRARY)
+include $(BUILD_SHARED_EXECUTABLE)
 
 ########################################################
 ## libsodium
