@@ -1,6 +1,7 @@
 package network.path.mobilenode.library.data.runner
 
 import android.content.Context
+import com.google.gson.Gson
 import network.path.mobilenode.library.Constants
 import network.path.mobilenode.library.domain.entity.JobRequest
 import network.path.mobilenode.library.domain.entity.JobType
@@ -9,7 +10,18 @@ import java.io.BufferedReader
 import java.io.File
 import java.io.InputStreamReader
 
-internal class TraceRunner(private val context: Context) : Runner {
+data class TraceResult(
+    val target: String,
+    val targetIp: String,
+    val maxHops: Int,
+    val packetSize: Int,
+    val probesPerHop: Int,
+    val hops: List<Hop>
+)
+
+data class Hop(val ip: String, val rtts: List<Double>, val lost: Int)
+
+internal class TraceRunner(private val context: Context, private val gson: Gson) : Runner {
     override val jobType = JobType.TRACEROUTE
 
     override fun runJob(jobRequest: JobRequest, timeSource: TimeSource) =
@@ -33,6 +45,7 @@ internal class TraceRunner(private val context: Context) : Runner {
         }
         p.destroy()
 
-        return sb.toString() to null
+        val result = gson.fromJson(sb.toString(), TraceResult::class.java)
+        return sb.toString() to result.hops.lastOrNull()?.rtts?.average()?.toLong()
     }
 }

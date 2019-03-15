@@ -1,6 +1,7 @@
 package network.path.mobilenode.library.data.runner
 
 import android.content.Context
+import com.google.gson.Gson
 import network.path.mobilenode.library.domain.PathJobExecutor
 import network.path.mobilenode.library.domain.PathStorage
 import network.path.mobilenode.library.domain.entity.JobRequest
@@ -16,6 +17,7 @@ internal class PathJobExecutorImpl(
     private val okHttpClient: OkHttpClient,
     private val storage: PathStorage,
     private val context: Context,
+    private val gson: Gson,
     private val timeSource: TimeSource
 ) : PathJobExecutor {
     private lateinit var executor: ExecutorService
@@ -40,7 +42,7 @@ internal class PathJobExecutorImpl(
             protocol.startsWith(prefix = "http", ignoreCase = true) -> HttpRunner(okHttpClient, storage)
             protocol.startsWith(prefix = "tcp", ignoreCase = true) -> TcpRunner(SocketFactory.getDefault())
             protocol.startsWith(prefix = "udp", ignoreCase = true) -> UdpRunner()
-            method.orEmpty().startsWith(prefix = "traceroute", ignoreCase = true) -> TraceRunner(context)
+            method.orEmpty().startsWith(prefix = "traceroute", ignoreCase = true) -> TraceRunner(context, gson)
             else -> FallbackRunner
         }
     }
